@@ -46,9 +46,26 @@ export default function Inicio() {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="pt-16" style={{ background: '#0D1F3C' }}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-24 lg:py-32">
-          <div className="max-w-2xl">
+      <section className="pt-16 relative overflow-hidden" style={{ background: '#0D1F3C' }}>
+        {/* Foto integrada — fondo derecho */}
+        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[42%]">
+          <img
+            src="/quim.png"
+            alt="Joaquín de Oses"
+            className="w-full h-full object-cover object-top"
+          />
+          {/* Gradiente que funde la foto con el fondo navy */}
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(to right, #0D1F3C 0%, rgba(13,31,60,0.4) 40%, transparent 70%)',
+          }} />
+          {/* Gradiente inferior */}
+          <div className="absolute bottom-0 left-0 right-0 h-32" style={{
+            background: 'linear-gradient(to top, #0D1F3C, transparent)',
+          }} />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 py-24 lg:py-36">
+          <div className="max-w-xl">
             <p className="text-xs font-inter font-semibold uppercase tracking-[0.15em] mb-6" style={{ color: '#C49A3C' }}>
               Consultoría Inmobiliaria · Barcelona
             </p>

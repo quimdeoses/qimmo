@@ -1,4 +1,4 @@
-import { Phone } from 'lucide-react'
+import { Phone, ArrowRight } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 

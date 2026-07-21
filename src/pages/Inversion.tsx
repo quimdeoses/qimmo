@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import {
   ArrowRight, CheckCircle,
   Home, Building2, Warehouse, TrendingUp,

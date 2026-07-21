@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <Link to="/" className="inline-block mb-4">
-              <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-8 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
+              <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-12 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
             </Link>
             <p className="font-inter text-sm leading-relaxed max-w-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>
               Consultoría inmobiliaria en Barcelona. Especializado en residencial, sector terciario e inversión patrimonial.

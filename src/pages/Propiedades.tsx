@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   MapPin, Maximize2, BedDouble, Bath, SlidersHorizontal, X, Search,

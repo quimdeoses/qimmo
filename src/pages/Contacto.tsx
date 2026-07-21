@@ -1,33 +1,11 @@
-import { useState } from 'react'
-import { Mail, ExternalLink, CheckCircle, ArrowRight, Clock, MapPin } from 'lucide-react'
+
+import { Mail, Phone, ExternalLink, Clock, MapPin } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { enviarASheets } from '../lib/sheets'
 
-const MOTIVOS = [
-  { id: 'vender',     label: 'Vender una propiedad' },
-  { id: 'comprar',    label: 'Comprar / invertir' },
-  { id: 'alquilar',   label: 'Alquilar un activo' },
-  { id: 'patrimonio', label: 'Gestión patrimonial' },
-  { id: 'due',        label: 'Due diligence / consultoría' },
-  { id: 'otro',       label: 'Otro' },
-]
 
 export default function Contacto() {
-  const [form, setForm] = useState({ nombre: '', email: '', telefono: '', motivo: '', mensaje: '' })
-  const [sent, setSent] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    await enviarASheets('Contacto', {
-      nombre: form.nombre,
-      email: form.email,
-      telefono: form.telefono,
-      motivo: form.motivo,
-      mensaje: form.mensaje,
-    })
-    setSent(true)
-  }
 
   return (
     <div className="min-h-screen flex flex-col">
