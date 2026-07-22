@@ -24,8 +24,7 @@ export default function Vender() {
                 <span style={{ color: '#C49A3C' }} className="italic">de inmueble.</span>
               </h1>
               <p className="text-white/55 font-inter text-[15px] leading-relaxed mb-6 max-w-md">
-                Viviendas, locales, oficinas y naves. Con o sin inquilinos. Gestionamos todo el proceso
-                con total transparencia y un único objetivo: el mejor precio en el menor tiempo.
+                Viviendas, locales, oficinas y naves. Con o sin inquilinos. Lo que más nos importa no es el inmueble — es que tú, como propietario, no pierdas el tiempo con compradores que no pueden cerrar la operación.
               </p>
               <div className="flex flex-wrap gap-2 mb-8">
                 {['Viviendas', 'Locales comerciales', 'Con inquilino', 'Sin inquilino', 'Naves'].map(tag => (
@@ -47,9 +46,9 @@ export default function Vender() {
             <div className="space-y-3">
               {[
                 { n: '01', t: 'Valoración honesta, sin inflar el precio para captarte.' },
-                { n: '02', t: 'Compradores activos y difusión premium antes de publicar en portales.' },
-                { n: '03', t: 'Negociamos en tu nombre. Solo cobramos cuando tú cobras.' },
-                { n: '04', t: 'Te acompañamos hasta notaría. Sin sorpresas, sin letra pequeña.' },
+                { n: '02', t: 'Verificamos la solvencia del comprador antes de que pongas un pie en notaría.' },
+                { n: '03', t: 'Gestionamos la financiación del comprador. Si necesita hipoteca, la tramitamos nosotros.' },
+                { n: '04', t: 'Te acompañamos hasta notaría. Sin sorpresas, sin tiempo perdido.' },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4 px-5 py-4 rounded-xl border" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
                   <span className="font-inter font-black text-[11px] tracking-wider shrink-0 mt-0.5" style={{ color: '#C49A3C' }}>{item.n}</span>
@@ -93,20 +92,20 @@ export default function Vender() {
           <div className="divide-y divide-slate-100">
             {[
               {
-                title: 'Valoramos tu piso con datos reales, no con promesas',
-                body:  'Analizamos operaciones cerradas en tu zona, la demanda actual y el estado de tu inmueble. Te damos un precio real, no uno inflado para que nos elijas.',
+                title: 'Te decimos cuánto vale tu piso, de verdad',
+                body:  'Analizamos operaciones cerradas en tu zona, no precios de lista. Te damos un número real con el que podemos trabajar — no uno inflado para que nos elijas y luego bajarlo.',
               },
               {
-                title: 'Compradores cualificados antes de publicar',
-                body:  'Tenemos una base de compradores activos con financiación verificada. En muchos casos cerramos la operación off-market, sin publicar el inmueble en portales.',
+                title: 'El comprador llega con la financiación resuelta',
+                body:  'Este es uno de los puntos que más tiempo hace perder a los propietarios: el comprador interesado que al final no consigue hipoteca. En qimmo gestionamos la financiación del comprador desde el principio. Si necesita hipoteca, la tramitamos nosotros antes de firmar arras. Así sabes que la operación va a cerrarse.',
               },
               {
-                title: 'Solo cobramos cuando tú cobras',
-                body:  'Sin gastos previos, sin depósitos, sin cargos si no vendemos. Únicamente cobramos al escriturar.',
+                title: 'Compradores activos, no curiosos',
+                body:  'Tenemos compradores con capacidad económica verificada buscando activos en Barcelona. En muchos casos presentamos el inmueble a nuestra red antes de publicarlo en portales.',
               },
               {
-                title: 'Comunicación directa, siempre',
-                body:  'Tendrás un consultor asignado que te informa semanalmente. Sin centralitas, sin comerciales que te pasen el teléfono. Siempre la misma persona.',
+                title: 'Trato directo, siempre la misma persona',
+                body:  'No hay equipo que te pase el teléfono. Hablas conmigo el primer día y el día de la firma. Y en todo lo que hay en medio.',
               },
             ].map((item, i) => (
               <div key={i} className="py-8 first:pt-0 last:pb-0 grid grid-cols-[32px_1fr] gap-5 items-start">
@@ -152,7 +151,7 @@ export default function Vender() {
               { n: '01', title: 'Valoración gratuita',       time: '24 h',       desc: 'Análisis comparativo de mercado y valoración profesional. Te explicamos el precio, por qué ese número y cuál es la mejor estrategia.' },
               { n: '02', title: 'Preparación del inmueble',   time: '3–5 días',   desc: 'Fotografía profesional, home staging si aplica, certificado energético y toda la documentación necesaria. Tu propiedad en su mejor versión.' },
               { n: '03', title: 'Comercialización activa',    time: 'Semanas 1–6', desc: 'Publicación en portales premium, difusión en nuestra red de compradores activos y operaciones off-market. Visitas filtradas y coordinadas por nosotros.' },
-              { n: '04', title: 'Negociación y escritura',    time: 'Cierre',      desc: 'Gestionamos las ofertas, negociamos en tu nombre y coordinamos el contrato de arras, el préstamo del comprador y la notaría.' },
+              { n: '04', title: 'Negociación y escritura',    time: 'Cierre',      desc: 'Gestionamos las ofertas y negociamos en tu nombre. Si el comprador necesita hipoteca, la tramitamos con nuestros partners financieros antes de firmar arras. Tú llegas a notaría con todo cerrado.' },
             ].map((step, i, arr) => (
               <div key={i} className="flex gap-6 relative">
                 <div className="flex flex-col items-center shrink-0">
