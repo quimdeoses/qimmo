@@ -53,7 +53,7 @@ export default function Inicio() {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="pt-16 relative overflow-hidden" style={{ background: '#0D1F3C' }}>
+      <section className="pt-20 relative overflow-hidden" style={{ background: '#0D1F3C' }}>
         {/* Foto integrada — fondo derecho */}
         <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[42%]">
           <img

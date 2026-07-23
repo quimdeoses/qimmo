@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle, AlertCircle,
   LogOut, ImagePlus, Loader2, ChevronRight, Users, Home, Calendar,
   Phone, Mail, MessageSquare, ArrowLeft, Clock, MapPin, Building2,
-  ChevronDown, ChevronUp, Star, FileText,
+  ChevronDown, ChevronUp, Star, FileText, BookOpen,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ interface Visita {
   created_at: string
 }
 
-type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato'
+type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'qimmo2025'
@@ -898,6 +898,233 @@ function NavItem({ icon: Icon, label, active, badge, onClick }: {
   )
 }
 
+// ── SECTION: Blog ─────────────────────────────────────────────────────────────
+interface BlogPostAdmin {
+  id: number
+  slug: string
+  titulo: string
+  categoria: string
+  extracto: string
+  contenido: string
+  fecha: string
+  tiempo_lectura: string
+  publicado: boolean
+  created_at: string
+}
+
+const BLOG_CATS = ['Comprar', 'Vender', 'Alquilar', 'Inversión', 'Normativa']
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+function SectionBlog({ notify }: { notify: (m: string, ok?: boolean) => void }) {
+  const [posts, setPosts]     = useState<BlogPostAdmin[]>([])
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal]     = useState<BlogPostAdmin | null | 'new'>(null)
+
+  const load = async () => {
+    if (!supabaseReady) { setLoading(false); return }
+    setLoading(true)
+    const { data, error } = await supabase.from('blog_posts').select('*').order('fecha', { ascending: false })
+    setLoading(false)
+    if (error) { notify(error.message, false); return }
+    setPosts((data ?? []) as BlogPostAdmin[])
+  }
+
+  useEffect(() => { load() }, [])
+
+  const togglePublish = async (post: BlogPostAdmin) => {
+    await supabase.from('blog_posts').update({ publicado: !post.publicado }).eq('id', post.id)
+    setPosts(ps => ps.map(p => p.id === post.id ? { ...p, publicado: !p.publicado } : p))
+    notify(post.publicado ? 'Despublicado' : 'Publicado')
+  }
+
+  const deletePost = async (id: number) => {
+    if (!confirm('¿Eliminar este artículo?')) return
+    await supabase.from('blog_posts').delete().eq('id', id)
+    setPosts(ps => ps.filter(p => p.id !== id))
+    notify('Artículo eliminado')
+  }
+
+  const CAT_DOT: Record<string, string> = {
+    Comprar: '#1D4ED8', Vender: '#059669', Alquilar: '#7C3AED',
+    Inversión: '#C49A3C', Normativa: '#DC2626',
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="font-jakarta font-bold text-navy text-2xl">Blog</h1>
+          <p className="font-inter text-sm mt-1" style={{ color: '#9CA3AF' }}>{posts.length} artículos</p>
+        </div>
+        <button onClick={() => setModal('new')} className="btn-primary gap-2">
+          <Plus size={15} /> Nuevo artículo
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin" style={{ color: '#C49A3C' }} /></div>
+      ) : posts.length === 0 ? (
+        <div className="text-center py-20">
+          <BookOpen size={40} className="mx-auto mb-3" style={{ color: '#E2E0DA' }} />
+          <p className="font-jakarta font-bold text-navy mb-2">Sin artículos todavía</p>
+          <p className="font-inter text-sm mb-4" style={{ color: '#9CA3AF' }}>Crea el primer artículo del blog</p>
+          <button onClick={() => setModal('new')} className="btn-primary">Crear artículo</button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {posts.map(post => (
+            <div key={post.id} className="bg-white rounded-2xl px-5 py-4 flex items-center gap-4"
+              style={{ border: '1px solid #E2E0DA' }}>
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: CAT_DOT[post.categoria] ?? '#9CA3AF' }} />
+              <div className="flex-1 min-w-0">
+                <p className="font-jakarta font-bold text-navy text-sm truncate">{post.titulo}</p>
+                <p className="font-inter text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+                  {post.categoria} · {post.fecha} · {post.tiempo_lectura}
+                </p>
+              </div>
+              <span className="font-inter text-xs font-semibold px-2.5 py-1 rounded-full shrink-0"
+                style={{ background: post.publicado ? '#ECFDF5' : '#F3F4F6', color: post.publicado ? '#059669' : '#9CA3AF' }}>
+                {post.publicado ? 'Publicado' : 'Borrador'}
+              </span>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => togglePublish(post)} className="p-1.5 rounded-lg hover:bg-gray-50"
+                  title={post.publicado ? 'Despublicar' : 'Publicar'} style={{ color: '#6B7280' }}>
+                  {post.publicado ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+                <button onClick={() => setModal(post)} className="p-1.5 rounded-lg hover:bg-gray-50" style={{ color: '#6B7280' }}>
+                  <Pencil size={15} />
+                </button>
+                <button onClick={() => deletePost(post.id)} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: '#9CA3AF' }}>
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {modal !== null && (
+        <BlogPostModal
+          post={modal === 'new' ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); load() }}
+          notify={notify}
+        />
+      )}
+    </div>
+  )
+}
+
+function BlogPostModal({ post, onClose, onSaved, notify }: {
+  post: BlogPostAdmin | null
+  onClose: () => void
+  onSaved: () => void
+  notify: (m: string, ok?: boolean) => void
+}) {
+  const editing = !!post
+  const [titulo, setTitulo]     = useState(post?.titulo ?? '')
+  const [slug, setSlug]         = useState(post?.slug ?? '')
+  const [categoria, setCategoria] = useState(post?.categoria ?? 'Comprar')
+  const [extracto, setExtracto] = useState(post?.extracto ?? '')
+  const [contenido, setContenido] = useState(post?.contenido ?? '')
+  const [fecha, setFecha]       = useState(post?.fecha ?? new Date().toISOString().split('T')[0])
+  const [tiempo, setTiempo]     = useState(post?.tiempo_lectura ?? '5 min')
+  const [publicado, setPublicado] = useState(post?.publicado ?? false)
+  const [saving, setSaving]     = useState(false)
+
+  const autoSlug = (t: string) => {
+    if (!editing) setSlug(slugify(t))
+  }
+
+  const save = async () => {
+    if (!titulo || !slug || !extracto) { notify('Título, slug y extracto son obligatorios', false); return }
+    setSaving(true)
+    const payload = { titulo, slug, categoria, extracto, contenido, fecha, tiempo_lectura: tiempo, publicado }
+    const { error } = editing && post
+      ? await supabase.from('blog_posts').update(payload).eq('id', post.id)
+      : await supabase.from('blog_posts').insert(payload)
+    setSaving(false)
+    if (error) { notify(error.message, false); return }
+    notify(editing ? 'Artículo actualizado' : 'Artículo creado')
+    onSaved()
+  }
+
+  const inp = "input w-full"
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
+      style={{ background: 'rgba(13,31,60,0.5)', backdropFilter: 'blur(4px)' }}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #E2E0DA' }}>
+          <h2 className="font-jakarta font-bold text-navy text-lg">{editing ? 'Editar artículo' : 'Nuevo artículo'}</h2>
+          <button onClick={onClose} style={{ color: '#9CA3AF' }}><X size={20} /></button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="label-field">Título *</label>
+            <input className={inp} value={titulo} onChange={e => { setTitulo(e.target.value); autoSlug(e.target.value) }} placeholder="Título del artículo" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label-field">Slug *</label>
+              <input className={inp} value={slug} onChange={e => setSlug(e.target.value)} placeholder="mi-articulo-slug" />
+            </div>
+            <div>
+              <label className="label-field">Categoría</label>
+              <select className={inp} value={categoria} onChange={e => setCategoria(e.target.value)}>
+                {BLOG_CATS.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="label-field">Extracto (resumen) *</label>
+            <textarea className={inp + ' resize-none'} rows={3} value={extracto}
+              onChange={e => setExtracto(e.target.value)} placeholder="Breve descripción del artículo..." />
+          </div>
+          <div>
+            <label className="label-field">Contenido (separa párrafos con línea en blanco)</label>
+            <textarea className={inp + ' resize-none font-mono text-xs'} rows={12} value={contenido}
+              onChange={e => setContenido(e.target.value)} placeholder={'Primer párrafo del artículo...\n\nSegundo párrafo...'} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label-field">Fecha</label>
+              <input type="date" className={inp} value={fecha} onChange={e => setFecha(e.target.value)} />
+            </div>
+            <div>
+              <label className="label-field">Tiempo de lectura</label>
+              <input className={inp} value={tiempo} onChange={e => setTiempo(e.target.value)} placeholder="5 min" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={publicado} onChange={() => setPublicado(v => !v)}
+              className="w-4 h-4" style={{ accentColor: '#0D1F3C' }} />
+            <span className="font-inter text-sm font-semibold" style={{ color: publicado ? '#0D1F3C' : '#9CA3AF' }}>
+              {publicado ? 'Publicado — visible en la web' : 'Borrador — no visible todavía'}
+            </span>
+          </label>
+        </div>
+        <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid #E2E0DA' }}>
+          <button onClick={save} disabled={saving} className="btn-primary gap-2">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+            {saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear artículo'}
+          </button>
+          <button onClick={onClose} className="btn-outline">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── SECTION: Mandato ──────────────────────────────────────────────────────────
 function SectionMandato() {
   return (
@@ -948,6 +1175,7 @@ export default function Admin() {
     { id: 'propiedades' as Section, icon: Home,     label: 'Propiedades',  badge: undefined },
     { id: 'visitas'     as Section, icon: Calendar, label: 'Visitas',      badge: undefined },
     { id: 'mandato'     as Section, icon: FileText, label: 'Mandato',      badge: undefined },
+    { id: 'blog'        as Section, icon: BookOpen, label: 'Blog',         badge: undefined },
   ]
 
   const activeSection = section === 'prop_detail' ? 'propiedades' : section
@@ -1035,6 +1263,7 @@ export default function Admin() {
               <iframe src="/mandato.html" title="Generar Mandato" style={{ width: '100%', height: '100%', border: 'none' }} />
             </div>
           )}
+          {section === 'blog' && <SectionBlog notify={notify} />}
         </div>
       </main>
     </div>

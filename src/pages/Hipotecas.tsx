@@ -91,7 +91,7 @@ export default function Hipotecas() {
       <Navbar />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="pt-16" style={{ background: '#0D1F3C' }}>
+      <section className="pt-20" style={{ background: '#0D1F3C' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20 lg:py-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             <div>

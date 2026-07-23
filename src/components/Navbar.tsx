@@ -34,10 +34,10 @@ export default function Navbar() {
         backdropFilter: scrolled ? 'blur(12px)' : 'none',
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
 
         <Link to="/" className="flex items-center select-none">
-          <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-16 w-auto" />
+          <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-20 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -62,7 +62,7 @@ export default function Navbar() {
             onMouseLeave={e => (e.currentTarget.style.color = '#6B7280')}>
             609 019 160
           </a>
-          <Link to="/contacto" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '13px' }}>
+          <Link to="/contacto" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '13px', borderRadius: '10px' }}>
             Hablamos
           </Link>
         </div>

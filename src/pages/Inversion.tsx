@@ -40,7 +40,7 @@ export default function Inversion() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
-      <div className="h-[64px]" />
+      <div className="h-[80px]" />
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
       <section className="bg-navy pt-20 pb-28 relative overflow-hidden">

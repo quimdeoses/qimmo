@@ -91,7 +91,7 @@ export default function Equipo() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
-      <div className="h-[64px]" />
+      <div className="h-[80px]" />
 
       {/* HERO */}
       <section className="pt-20 pb-24 relative overflow-hidden" style={{ background: '#0D1F3C' }}>

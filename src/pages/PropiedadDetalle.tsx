@@ -126,7 +126,7 @@ export default function PropiedadDetalle() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
-      <div className="h-[64px]" />
+      <div className="h-[80px]" />
 
       {/* ── BREADCRUMB ─────────────────────────────────────────────── */}
       <div className="max-w-screen-xl mx-auto px-4 lg:px-8 py-3 flex items-center gap-2">

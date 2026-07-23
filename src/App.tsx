@@ -17,6 +17,7 @@ import Inversion           from './pages/Inversion'
 import Calculadoras        from './pages/Calculadoras'
 import Contacto            from './pages/Contacto'
 import Blog                from './pages/Blog'
+import BlogPost            from './pages/BlogPost'
 import AreaPropietarios   from './pages/AreaPropietarios'
 import AreaClientes        from './pages/AreaClientes'
 import Equipo              from './pages/Equipo'
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/politica-privacidad"  element={<PoliticaPrivacidad />} />
         <Route path="/politica-cookies"     element={<PoliticaCookies />} />
         <Route path="/blog"                  element={<Blog />} />
+        <Route path="/blog/:slug"            element={<BlogPost />} />
         <Route path="/admin"               element={<Admin />} />
       </Routes>
     </BrowserRouter>

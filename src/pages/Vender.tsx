@@ -180,7 +180,7 @@ export default function Vender() {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="pt-16 relative overflow-hidden" style={{ background: '#0D1F3C', minHeight: '520px' }}>
+      <section className="pt-20 relative overflow-hidden" style={{ background: '#0D1F3C', minHeight: '520px' }}>
         <div className="absolute inset-0" style={{
           background: 'radial-gradient(ellipse 60% 80% at 100% 50%, rgba(196,154,60,0.07) 0%, transparent 70%)',
         }} />

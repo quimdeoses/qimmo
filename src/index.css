@@ -60,17 +60,18 @@
     padding: 0.75rem 1.75rem;
     background: #0D1F3C;
     color: white;
-    border-radius: 6px;
+    border-radius: 12px;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 14px;
+    letter-spacing: -0.01em;
     transition: all 0.2s;
     border: none;
     cursor: pointer;
   }
   .btn-primary:hover {
     background: #1B3561;
-    box-shadow: 0 4px 20px rgba(13,31,60,0.25);
+    box-shadow: 0 6px 24px rgba(13,31,60,0.30);
   }
   .btn-outline {
     display: inline-flex;
@@ -79,7 +80,7 @@
     padding: 0.75rem 1.75rem;
     border: 1.5px solid #0D1F3C;
     color: #0D1F3C;
-    border-radius: 6px;
+    border-radius: 12px;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 14px;
@@ -104,7 +105,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 12px;
   }
   .btn-ghost:hover { color: #0D1F3C; }
 
@@ -112,18 +113,18 @@
   .card {
     background: white;
     border: 1px solid #E2E0DA;
-    border-radius: 10px;
+    border-radius: 20px;
     padding: 1.5rem;
-    transition: all 0.2s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .card:hover {
     border-color: #D6E0F0;
-    box-shadow: 0 8px 32px rgba(13,31,60,0.08);
+    box-shadow: 0 12px 40px rgba(13,31,60,0.10), 0 2px 8px rgba(13,31,60,0.05);
   }
   .card-navy {
     background: #0D1F3C;
     color: white;
-    border-radius: 10px;
+    border-radius: 20px;
     padding: 1.5rem;
   }
 
@@ -132,15 +133,15 @@
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1.5px solid #E2E0DA;
-    border-radius: 6px;
+    border-radius: 12px;
     font-family: 'Inter', sans-serif;
     font-size: 14px;
     color: #0D1F3C;
     background: white;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
     outline: none;
   }
-  .input:focus { border-color: #0D1F3C; }
+  .input:focus { border-color: #0D1F3C; box-shadow: 0 0 0 3px rgba(13,31,60,0.06); }
   .input::placeholder { color: #9CA3AF; }
 
   .label-field {
@@ -157,14 +158,14 @@
   .prop-card {
     background: white;
     border: 1px solid #E2E0DA;
-    border-radius: 10px;
+    border-radius: 20px;
     overflow: hidden;
     transition: all 0.2s;
     cursor: pointer;
   }
   .prop-card:hover {
     border-color: #B8CAE8;
-    box-shadow: 0 8px 32px rgba(13,31,60,0.10);
+    box-shadow: 0 12px 40px rgba(13,31,60,0.12);
     transform: translateY(-2px);
   }
 
@@ -196,7 +197,7 @@
     font-size: 11px;
     font-weight: 700;
     padding: 4px 9px;
-    border-radius: 5px;
+    border-radius: 8px;
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(13,31,60,0.3);
     border: 2px solid white;
@@ -232,7 +233,7 @@
 /* Leaflet */
 .leaflet-container { font-family: 'Inter', sans-serif; }
 .leaflet-popup-content-wrapper {
-  border-radius: 10px;
+  border-radius: 16px;
   box-shadow: 0 8px 32px rgba(13,31,60,0.12);
   padding: 0; overflow: hidden;
 }

@@ -88,7 +88,7 @@ export default function Seguros() {
       <Navbar />
 
       {/* ── HERO ──────────────────────────────────────────────────── */}
-      <section className="pt-16" style={{ background: '#0D1F3C' }}>
+      <section className="pt-20" style={{ background: '#0D1F3C' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20 lg:py-28">
           <div className="max-w-2xl">
             <p className="label mb-4" style={{ color: '#C49A3C' }}>Seguros · qimmo</p>
