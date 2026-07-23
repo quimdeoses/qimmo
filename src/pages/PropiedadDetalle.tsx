@@ -4,13 +4,13 @@ import {
   ArrowLeft, MapPin, Maximize2, BedDouble, Bath, Car, TreePine,
   Heart, Share, ChevronLeft, ChevronRight, CheckCircle, Phone,
   Mail, Calendar, ArrowRight, BadgeCheck,
-  Train, ShoppingBag, Coffee, Building2, Calculator
+  Train, ShoppingBag, Coffee, Building2, Calculator, Loader2
 } from 'lucide-react'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { PROPIEDADES, type Propiedad } from '../data/propiedades'
+import { supabase, type Propiedad } from '../lib/supabase'
 
 // ── Dot marker for location map ───────────────────────────────────────────
 const dotMarker = L.divIcon({
@@ -62,17 +62,42 @@ const AMENITIES = [
 export default function PropiedadDetalle() {
   const { ref } = useParams<{ ref: string }>()
   const navigate = useNavigate()
-  const propiedad = PROPIEDADES.find(p => p.ref === ref)
+  const [propiedad, setPropiedad] = useState<Propiedad | null | undefined>(undefined)
+  const [similar, setSimilar]     = useState<Propiedad[]>([])
 
   const [imgIdx, setImgIdx]       = useState(0)
   const [saved, setSaved]         = useState(false)
 
-  // Mortgage simulator state (initialised after propiedad check below)
-  const [hipEntrada, setHipEntrada] = useState(20)   // % down payment
-  const [hipTipo, setHipTipo]       = useState(3.5)  // annual interest %
+  const [hipEntrada, setHipEntrada] = useState(20)
+  const [hipTipo, setHipTipo]       = useState(3.5)
   const [hipAnos, setHipAnos]       = useState(25)
 
   useEffect(() => { window.scrollTo(0, 0) }, [ref])
+
+  useEffect(() => {
+    if (!ref) return
+    supabase.from('propiedades').select('*').eq('ref', ref).eq('publicado', true).single()
+      .then(({ data }) => {
+        const p = data as Propiedad | null
+        setPropiedad(p)
+        if (p) {
+          supabase.from('propiedades').select('*').eq('publicado', true).eq('tipo', p.tipo).neq('ref', ref).limit(3)
+            .then(({ data: sim }) => setSimilar((sim ?? []) as Propiedad[]))
+        }
+      })
+  }, [ref])
+
+  if (propiedad === undefined) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 size={28} className="animate-spin" style={{ color: '#C49A3C' }} />
+        </div>
+        <Footer />
+      </div>
+    )
+  }
 
   if (!propiedad) {
     return (
@@ -92,8 +117,6 @@ export default function PropiedadDetalle() {
   const p: Propiedad = propiedad
   const pm2 = Math.round(p.precio / p.m2)
   const imgs = p.imagenes && p.imagenes.length > 0 ? p.imagenes : [p.imagen]
-
-  const similar = PROPIEDADES.filter(x => x.ref !== p.ref && x.tipo === p.tipo).slice(0, 3)
 
   const hipPrincipal = useMemo(() => p.precio * (1 - hipEntrada / 100), [p.precio, hipEntrada])
   const hipResult    = useMemo(() => calcHipoteca(hipPrincipal, hipTipo, hipAnos), [hipPrincipal, hipTipo, hipAnos])

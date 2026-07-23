@@ -1,14 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   MapPin, Maximize2, BedDouble, Bath, SlidersHorizontal, X, Search,
-  List, Map, ChevronDown, Heart, ArrowUpDown, Car, TreePine
+  List, Map, ChevronDown, Heart, ArrowUpDown, Car, TreePine, Loader2
 } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { PROPIEDADES, type TipoProp, type ZonaProp, type Propiedad } from '../data/propiedades'
+import { supabase, type Propiedad } from '../lib/supabase'
+
+type TipoProp = Propiedad['tipo']
+type ZonaProp = Propiedad['zona']
 
 // ── Custom map markers ──────────────────────────────────────────────────────
 function createPriceMarker(precio: number, active = false) {
@@ -198,6 +201,8 @@ function MapPopupContent({ p }: { p: Propiedad }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function Propiedades() {
+  const [allProps, setAllProps]   = useState<Propiedad[]>([])
+  const [loadingProps, setLoadingProps] = useState(true)
   const [search, setSearch]       = useState('')
   const [zona, setZona]           = useState<string>('Todos')
   const [tipo, setTipo]           = useState<string>('Todos')
@@ -209,9 +214,14 @@ export default function Propiedades() {
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
+  useEffect(() => {
+    supabase.from('propiedades').select('*').eq('publicado', true).order('created_at', { ascending: false })
+      .then(({ data }) => { setAllProps((data ?? []) as Propiedad[]); setLoadingProps(false) })
+  }, [])
+
   const filtered = useMemo(() => {
     const range = PRECIO_RANGES[precioIdx]
-    let list = PROPIEDADES.filter(p => {
+    let list = allProps.filter(p => {
       const okSearch = search === '' ||
         p.titulo.toLowerCase().includes(search.toLowerCase()) ||
         p.barrio.toLowerCase().includes(search.toLowerCase()) ||
@@ -220,7 +230,7 @@ export default function Propiedades() {
       const okZona   = zona === 'Todos' || p.zona === zona
       const okTipo   = tipo === 'Todos' || p.tipo === tipo
       const okPrecio = p.precio >= range.min && p.precio <= range.max
-      const okHab    = minHab === 0 || (p.habitaciones !== undefined && p.habitaciones >= minHab)
+      const okHab    = minHab === 0 || (p.habitaciones != null && p.habitaciones >= minHab)
       return okSearch && okZona && okTipo && okPrecio && okHab
     })
     switch (sortBy) {

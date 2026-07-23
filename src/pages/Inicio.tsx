@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, MapPin, TrendingUp, Users, Clock } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { PROPIEDADES as propiedades } from '../data/propiedades'
+import { supabase, type Propiedad } from '../lib/supabase'
 
 const STATS = [
   { num: '+150',  label: 'Operaciones gestionadas' },
@@ -39,7 +40,12 @@ const SERVICIOS = [
 ]
 
 export default function Inicio() {
-  const featured = propiedades.slice(0, 3)
+  const [featured, setFeatured] = useState<Propiedad[]>([])
+
+  useEffect(() => {
+    supabase.from('propiedades').select('*').eq('publicado', true).order('created_at', { ascending: false }).limit(3)
+      .then(({ data }) => setFeatured((data ?? []) as Propiedad[]))
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F7F6F2' }}>

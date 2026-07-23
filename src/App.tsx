@@ -21,6 +21,7 @@ import Equipo              from './pages/Equipo'
 import Documentacion       from './pages/Documentacion'
 import PoliticaPrivacidad  from './pages/PoliticaPrivacidad'
 import PoliticaCookies     from './pages/PoliticaCookies'
+import Admin               from './pages/Admin'
 
 export default function App() {
   return (
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/documentacion"        element={<Documentacion />} />
         <Route path="/politica-privacidad"  element={<PoliticaPrivacidad />} />
         <Route path="/politica-cookies"     element={<PoliticaCookies />} />
+        <Route path="/admin"               element={<Admin />} />
       </Routes>
     </BrowserRouter>
   )
