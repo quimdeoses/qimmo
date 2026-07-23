@@ -1,8 +1,40 @@
-import { Phone, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { Phone, ArrowRight, CheckCircle } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 export default function Vender() {
+  const [form, setForm] = useState({ nombre: '', telefono: '', email: '', direccion: '', cp: '', ciudad: '' })
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSending(true)
+    try {
+      await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: '38467395-6375-4e14-ba16-dd4ad72c98ba',
+          subject: `Nueva solicitud de valoración — ${form.nombre}`,
+          from_name: 'qimmo.es',
+          nombre: form.nombre,
+          telefono: form.telefono,
+          email: form.email,
+          direccion: form.direccion,
+          codigo_postal: form.cp,
+          ciudad: form.ciudad,
+        }),
+      })
+      setSent(true)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
@@ -177,29 +209,96 @@ export default function Vender() {
         </div>
       </section>
 
-      {/* ── CONTACTO DIRECTO ──────────────────────────────────────────── */}
-      <section id="valoracion" className="py-24 relative overflow-hidden" style={{ background: '#0D1F3C' }}>
+      {/* ── FORMULARIO VALORACIÓN ─────────────────────────────────────── */}
+      <section id="valoracion" className="py-24" style={{ background: '#0D1F3C' }}>
         <div className="max-w-screen-xl mx-auto px-6 lg:px-10">
-          <div className="relative z-10 max-w-xl">
-            {/* Contacto directo — formulario oculto de momento */}
-            <div className="card space-y-4 p-6">
-              <p className="font-jakarta font-bold text-lg" style={{ color: '#0D1F3C' }}>
-                ¿Hablamos?
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+
+            {/* Texto */}
+            <div>
+              <p className="text-xs font-inter font-semibold uppercase tracking-[0.15em] mb-4" style={{ color: '#C49A3C' }}>Valoración gratuita</p>
+              <h2 className="h2 text-white mb-4">¿Cuánto vale<br />tu inmueble?</h2>
+              <p className="font-inter leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px' }}>
+                Déjame tus datos y en menos de 24 horas te contacto personalmente con una valoración real basada en operaciones cerradas en tu zona — no en precios de lista.
               </p>
-              <p className="font-inter text-sm leading-relaxed" style={{ color: '#6B7280' }}>
-                Cuéntame tu caso directamente. Sin formularios intermedios.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <a href="tel:+34609019160" className="btn-primary">
-                  609 019 160
-                </a>
-                <a href="https://wa.me/34609019160" target="_blank" rel="noopener noreferrer" className="btn-outline">
-                  WhatsApp
-                </a>
-                <a href="mailto:info@qimmo.es" className="btn-outline">
-                  info@qimmo.es
-                </a>
-              </div>
+            </div>
+
+            {/* Formulario */}
+            <div>
+              {sent ? (
+                <div className="flex flex-col items-center justify-center text-center py-12 gap-4">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(196,154,60,0.15)' }}>
+                    <CheckCircle size={26} style={{ color: '#C49A3C' }} />
+                  </div>
+                  <p className="font-jakarta font-bold text-xl text-white">¡Recibido!</p>
+                  <p className="font-inter text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    En breves recibirás tu valoración. Si es urgente, llámame al <a href="tel:+34609019160" className="underline text-white">609 019 160</a>.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  {/* Nombre */}
+                  <input
+                    required type="text" placeholder="Nombre *"
+                    value={form.nombre} onChange={set('nombre')}
+                    className="w-full px-4 py-3 rounded-lg font-inter text-sm outline-none transition-all"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#C49A3C'}
+                    onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+                  />
+                  {/* Teléfono + Email */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { k: 'telefono' as const, ph: 'Teléfono *', type: 'tel', req: true },
+                      { k: 'email'    as const, ph: 'Email *',    type: 'email', req: true },
+                    ].map(({ k, ph, type, req }) => (
+                      <input
+                        key={k} required={req} type={type} placeholder={ph}
+                        value={form[k]} onChange={set(k)}
+                        className="w-full px-4 py-3 rounded-lg font-inter text-sm outline-none transition-all"
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}
+                        onFocus={e => e.currentTarget.style.borderColor = '#C49A3C'}
+                        onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+                      />
+                    ))}
+                  </div>
+                  {/* Dirección */}
+                  <input
+                    required type="text" placeholder="Dirección del inmueble *"
+                    value={form.direccion} onChange={set('direccion')}
+                    className="w-full px-4 py-3 rounded-lg font-inter text-sm outline-none transition-all"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#C49A3C'}
+                    onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+                  />
+                  {/* CP + Ciudad */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { k: 'cp'     as const, ph: 'Código postal *' },
+                      { k: 'ciudad' as const, ph: 'Ciudad *' },
+                    ].map(({ k, ph }) => (
+                      <input
+                        key={k} required type="text" placeholder={ph}
+                        value={form[k]} onChange={set(k)}
+                        className="w-full px-4 py-3 rounded-lg font-inter text-sm outline-none transition-all"
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}
+                        onFocus={e => e.currentTarget.style.borderColor = '#C49A3C'}
+                        onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="submit" disabled={sending}
+                    className="w-full py-3.5 rounded-lg font-jakarta font-bold text-sm transition-all flex items-center justify-center gap-2"
+                    style={{ background: '#C49A3C', color: '#0D1F3C', opacity: sending ? 0.7 : 1 }}
+                  >
+                    {sending ? 'Enviando...' : <>Solicitar valoración gratuita <ArrowRight size={15} /></>}
+                  </button>
+                  <p className="text-center font-inter text-xs" style={{ color: 'rgba(255,255,255,0.30)' }}>
+                    Sin compromiso. Te respondo en menos de 24 horas.
+                  </p>
+                </form>
+              )}
             </div>
           </div>
         </div>
