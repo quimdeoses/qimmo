@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle, AlertCircle,
   LogOut, ImagePlus, Loader2, ChevronRight, Users, Home, Calendar,
   Phone, Mail, MessageSquare, ArrowLeft, Clock, MapPin, Building2,
-  ChevronDown, ChevronUp, Star,
+  ChevronDown, ChevronUp, Star, FileText,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ interface Visita {
   created_at: string
 }
 
-type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas'
+type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'qimmo2025'
@@ -894,6 +894,19 @@ function NavItem({ icon: Icon, label, active, badge, onClick }: {
   )
 }
 
+// ── SECTION: Mandato ──────────────────────────────────────────────────────────
+function SectionMandato() {
+  return (
+    <div style={{ height: 'calc(100vh - 56px)', margin: '0 -16px' }}>
+      <iframe
+        src="/mandato.html"
+        title="Generar Mandato"
+        style={{ width: '100%', height: '100%', border: 'none' }}
+      />
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const [authed, setAuthed]       = useState(() => sessionStorage.getItem(SESSION_KEY) === '1')
@@ -930,6 +943,7 @@ export default function Admin() {
     { id: 'pipeline'    as Section, icon: Users,    label: 'Pipeline',     badge: newLeadsCount },
     { id: 'propiedades' as Section, icon: Home,     label: 'Propiedades',  badge: undefined },
     { id: 'visitas'     as Section, icon: Calendar, label: 'Visitas',      badge: undefined },
+    { id: 'mandato'     as Section, icon: FileText, label: 'Mandato',      badge: undefined },
   ]
 
   const activeSection = section === 'prop_detail' ? 'propiedades' : section
@@ -979,6 +993,7 @@ export default function Admin() {
           <SectionPropDetail prop={selectedProp} onBack={() => goTo('propiedades')} notify={notify} />
         )}
         {section === 'visitas' && <SectionVisitas notify={notify} />}
+        {section === 'mandato' && <SectionMandato />}
       </main>
     </div>
   )
