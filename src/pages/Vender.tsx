@@ -260,6 +260,43 @@ export default function Vender() {
         </div>
       </section>
 
+      {/* ── PORTALES PREMIUM ── */}
+<section className="py-16" style={{ background: '#F7F6F2' }}>
+  <div className="max-w-7xl mx-auto px-6 lg:px-10">
+    <div className="mb-10">
+      <p className="label mb-3">Visibilidad máxima</p>
+      <h2 className="h2 text-navy">Tu inmueble en los portales<br />más visitados de España.</h2>
+      <p className="font-inter text-base mt-4 max-w-2xl" style={{ color: '#6B7280' }}>
+        Publicamos tu propiedad en los portales con mayor tráfico cualificado: compradores activos, con capacidad real de compra. Sin extra de coste para ti.
+      </p>
+    </div>
+    <div className="flex flex-wrap gap-4 items-center">
+      {[
+        { name: 'Idealista',    domain: 'idealista.com' },
+        { name: 'Ya Encontré',  domain: 'yaencontre.com' },
+        { name: 'Fotocasa',     domain: 'fotocasa.es' },
+        { name: 'Habitaclia',   domain: 'habitaclia.com' },
+        { name: 'Milanuncios',  domain: 'milanuncios.com' },
+      ].map(p => (
+        <div key={p.name}
+          className="flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white"
+          style={{ border: '1px solid #E2E0DA' }}>
+          <img
+            src={`https://logo.clearbit.com/${p.domain}`}
+            alt={p.name}
+            width={22}
+            height={22}
+            className="object-contain"
+            style={{ maxHeight: 22 }}
+            onError={e => { e.currentTarget.style.display = 'none' }}
+          />
+          <span className="font-inter font-semibold text-sm text-navy">{p.name}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
       {/* ── PROCESO ── */}
       <section className="py-20" style={{ background: '#F7F6F2' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
@@ -289,6 +326,56 @@ export default function Vender() {
           </div>
         </div>
       </section>
+
+      {/* ── PARTNER SERVEI ESTACIÓ ── */}
+<section className="py-16 bg-white">
+  <div className="max-w-7xl mx-auto px-6 lg:px-10">
+    <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E2E0DA' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2">
+        <div className="p-10">
+          <p className="label mb-3">Partner exclusivo</p>
+          <h2 className="h2 text-navy mb-4">
+            ¿Tu piso necesita una reforma antes de vender?
+          </h2>
+          <p className="font-inter text-base leading-relaxed mb-6" style={{ color: '#4B5563' }}>
+            Un inmueble reformado se vende más rápido y por encima del precio de mercado. Como colaboradores de <strong>Servei Estació</strong>, el referente en bricolaje y reformas en Cataluña, ofrecemos a nuestros clientes vendedores acceso a presupuestos preferentes y reforma express para poner el inmueble en su mejor versión antes de salir al mercado.
+          </p>
+          <div className="space-y-2.5 mb-8">
+            {[
+              'Presupuesto gratuito en 48h',
+              'Reforma express: pintura, suelos, baños y cocina',
+              'Precios preferentes para clientes qimmo',
+              'Coordinación completa: sin que tengas que estar presente',
+            ].map(item => (
+              <div key={item} className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#C49A3C' }} />
+                <p className="font-inter text-sm" style={{ color: '#4B5563' }}>{item}</p>
+              </div>
+            ))}
+          </div>
+          <a href="/contacto" className="btn-primary inline-flex" style={{ background: '#0D1F3C' }}>
+            Solicitar presupuesto de reforma
+          </a>
+        </div>
+        <div className="p-10 flex flex-col justify-center" style={{ background: '#F7F6F2', borderLeft: '1px solid #E2E0DA' }}>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: 'white', border: '1px solid #E2E0DA' }}>
+              <img src="https://logo.clearbit.com/serveiestacio.com" alt="Servei Estació" width={32} height={32} className="object-contain"
+                onError={e => { e.currentTarget.style.display = 'none' }} />
+            </div>
+            <div>
+              <p className="font-jakarta font-bold text-navy">Servei Estació</p>
+              <p className="font-inter text-xs" style={{ color: '#9CA3AF' }}>Partner oficial · Bricolaje & Reformas</p>
+            </div>
+          </div>
+          <blockquote className="font-inter text-sm italic leading-relaxed" style={{ color: '#6B7280' }}>
+            "Colaboramos con qimmo porque compartimos el mismo enfoque: hacer las cosas bien, con el mejor resultado para el cliente. Un piso reformado multiplica su valor en el mercado."
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* ── TESTIMONIAL ── */}
       <section className="py-16 bg-white border-y border-[#E2E0DA]">

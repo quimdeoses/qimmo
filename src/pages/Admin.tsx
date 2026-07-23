@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  supabase, type Propiedad, type TipoProp, type ZonaProp,
+  supabase, supabaseReady, type Propiedad, type TipoProp, type ZonaProp,
   type EnergiaCert, type BadgeProp,
 } from '../lib/supabase'
 import {
@@ -428,6 +428,7 @@ function SectionPipeline({ notify }: { notify: (m: string, ok?: boolean) => void
   const [filter, setFilter]       = useState<Lead['estado'] | 'todos'>('todos')
 
   useEffect(() => {
+    if (!supabaseReady) { setLoading(false); return }
     supabase.from('leads').select('*').order('created_at', { ascending: false })
       .then(({ data, error }) => {
         setLoading(false)
@@ -503,6 +504,7 @@ function SectionPropiedades({
   const [modal, setModal]   = useState<'new' | null>(null)
 
   const load = async () => {
+    if (!supabaseReady) { setLoading(false); return }
     setLoading(true)
     const { data, error } = await supabase.from('propiedades').select('*').order('created_at', { ascending: false })
     setLoading(false)
@@ -617,6 +619,7 @@ function SectionPropDetail({ prop, onBack, notify }: {
   const [tab, setTab]         = useState<'info' | 'leads'>('info')
 
   useEffect(() => {
+    if (!supabaseReady) return
     supabase.from('leads').select('*').eq('propiedad_ref', prop.ref).order('created_at', { ascending: false })
       .then(({ data }) => setLeads((data ?? []) as Lead[]))
   }, [prop.ref])
@@ -774,6 +777,7 @@ function SectionVisitas({ notify }: { notify: (m: string, ok?: boolean) => void 
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supabaseReady) { setLoading(false); return }
     supabase.from('visitas').select('*').order('fecha', { ascending: true }).order('hora', { ascending: true })
       .then(({ data, error }) => {
         setLoading(false)
@@ -919,7 +923,7 @@ export default function Admin() {
   const notify = (msg: string, ok = true) => setToast({ msg, ok })
 
   useEffect(() => {
-    if (!authed) return
+    if (!authed || !supabaseReady) return
     supabase.from('leads').select('id', { count: 'exact' }).eq('estado', 'nuevo')
       .then(({ count }) => setNewLeadsCount(count ?? 0))
   }, [authed])
@@ -949,51 +953,89 @@ export default function Admin() {
   const activeSection = section === 'prop_detail' ? 'propiedades' : section
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#F7F6F2' }}>
+    <div className="min-h-screen flex" style={{ background: '#F7F6F2' }}>
       {toast && <Toast msg={toast.msg} ok={toast.ok} onClose={() => setToast(null)} />}
 
-      {/* Top header */}
-      <header className="bg-white sticky top-0 z-40" style={{ borderBottom: '1px solid #E2E0DA' }}>
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 h-14 flex items-center gap-4">
-          <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-9 w-auto shrink-0" />
-          <span className="font-inter text-xs font-semibold uppercase tracking-widest shrink-0" style={{ color: '#C49A3C' }}>Admin</span>
-
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1 ml-4">
-            {NAV.map(n => (
-              <button key={n.id} onClick={() => goTo(n.id)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-inter text-sm font-medium transition-all"
-                style={{
-                  background: activeSection === n.id ? '#F0F4FA' : 'transparent',
-                  color: activeSection === n.id ? '#0D1F3C' : '#6B7280',
-                }}>
-                <n.icon size={15} />
-                {n.label}
-                {n.badge != null && n.badge > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: '#EFF6FF', color: '#2563EB' }}>{n.badge}</span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3 ml-auto">
-            <a href="/" target="_blank" className="hidden md:block font-inter text-xs" style={{ color: '#9CA3AF' }}>Ver web →</a>
-            <button onClick={logout} className="flex items-center gap-1.5 font-inter text-sm" style={{ color: '#6B7280' }}>
-              <LogOut size={14} /> <span className="hidden md:inline">Salir</span>
-            </button>
-          </div>
+      {/* ── SIDEBAR ── */}
+      <aside className="hidden md:flex flex-col w-56 shrink-0 sticky top-0 h-screen bg-white"
+        style={{ borderRight: '1px solid #E2E0DA' }}>
+        {/* Logo */}
+        <div className="px-5 py-5" style={{ borderBottom: '1px solid #E2E0DA' }}>
+          <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-10 w-auto" />
+          <p className="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1" style={{ color: '#C49A3C' }}>
+            CRM · Admin
+          </p>
         </div>
-      </header>
 
-      {/* Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 lg:px-6 py-8">
-        {section === 'pipeline' && <SectionPipeline notify={notify} />}
-        {section === 'propiedades' && <SectionPropiedades notify={notify} onSelectProp={handleSelectProp} />}
-        {section === 'prop_detail' && selectedProp && (
-          <SectionPropDetail prop={selectedProp} onBack={() => goTo('propiedades')} notify={notify} />
-        )}
-        {section === 'visitas' && <SectionVisitas notify={notify} />}
-        {section === 'mandato' && <SectionMandato />}
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {NAV.map(n => (
+            <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge}
+              active={activeSection === n.id} onClick={() => goTo(n.id)} />
+          ))}
+        </nav>
+
+        {/* Bottom */}
+        <div className="px-3 py-4 space-y-1" style={{ borderTop: '1px solid #E2E0DA' }}>
+          {!supabaseReady && (
+            <div className="mx-1 mb-3 px-3 py-2 rounded-lg" style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}>
+              <p className="font-inter text-[10px] font-semibold" style={{ color: '#92400E' }}>Supabase no configurado</p>
+              <p className="font-inter text-[10px]" style={{ color: '#B45309' }}>Añade las variables de entorno en Cloudflare</p>
+            </div>
+          )}
+          <a href="/" target="_blank"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-inter text-sm transition-all w-full"
+            style={{ color: '#9CA3AF' }}>
+            <MapPin size={15} /> Ver web
+          </a>
+          <button onClick={logout}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-inter text-sm transition-all w-full"
+            style={{ color: '#9CA3AF' }}>
+            <LogOut size={15} /> Cerrar sesión
+          </button>
+        </div>
+      </aside>
+
+      {/* ── MOBILE TOPBAR ── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white h-14 flex items-center px-4 gap-3"
+        style={{ borderBottom: '1px solid #E2E0DA' }}>
+        <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-9 w-auto" />
+        <span className="font-inter text-xs font-semibold uppercase tracking-widest" style={{ color: '#C49A3C' }}>Admin</span>
+        <div className="flex-1" />
+        <button onClick={() => setMobileMenuOpen(v => !v)} className="p-2" style={{ color: '#6B7280' }}>
+          {mobileMenuOpen ? <X size={20} /> : <ChevronDown size={20} />}
+        </button>
+      </div>
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed top-14 left-0 right-0 z-40 bg-white shadow-lg px-3 py-3 space-y-1"
+          style={{ borderBottom: '1px solid #E2E0DA' }}>
+          {NAV.map(n => (
+            <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge}
+              active={activeSection === n.id} onClick={() => goTo(n.id)} />
+          ))}
+          <button onClick={logout}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-inter text-sm w-full mt-2"
+            style={{ color: '#9CA3AF', borderTop: '1px solid #E2E0DA' }}>
+            <LogOut size={15} /> Cerrar sesión
+          </button>
+        </div>
+      )}
+
+      {/* ── MAIN CONTENT ── */}
+      <main className="flex-1 min-w-0 pt-0 md:pt-0 mt-14 md:mt-0">
+        <div className={`px-6 lg:px-8 py-8 ${section === 'mandato' ? 'p-0' : ''}`}>
+          {section === 'pipeline' && <SectionPipeline notify={notify} />}
+          {section === 'propiedades' && <SectionPropiedades notify={notify} onSelectProp={handleSelectProp} />}
+          {section === 'prop_detail' && selectedProp && (
+            <SectionPropDetail prop={selectedProp} onBack={() => goTo('propiedades')} notify={notify} />
+          )}
+          {section === 'visitas' && <SectionVisitas notify={notify} />}
+          {section === 'mandato' && (
+            <div style={{ height: '100vh', margin: '-32px -32px 0' }}>
+              <iframe src="/mandato.html" title="Generar Mandato" style={{ width: '100%', height: '100%', border: 'none' }} />
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )

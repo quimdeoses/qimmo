@@ -12,9 +12,11 @@ import AlquilarPiso        from './pages/AlquilarPiso'
 import AlquilarTemporal    from './pages/AlquilarTemporal'
 import AlquilarLocalOficina from './pages/AlquilarLocalOficina'
 import Financiacion        from './pages/Hipotecas'
+import Seguros             from './pages/Seguros'
 import Inversion           from './pages/Inversion'
 import Calculadoras        from './pages/Calculadoras'
 import Contacto            from './pages/Contacto'
+import Blog                from './pages/Blog'
 import AreaPropietarios   from './pages/AreaPropietarios'
 import AreaClientes        from './pages/AreaClientes'
 import Equipo              from './pages/Equipo'
@@ -42,6 +44,8 @@ export default function App() {
         <Route path="/alquilar/temporal"     element={<AlquilarTemporal />} />
         <Route path="/alquilar/local"        element={<AlquilarLocalOficina />} />
         <Route path="/financiacion"          element={<Financiacion />} />
+        <Route path="/hipotecas"             element={<Financiacion />} />
+        <Route path="/seguros"               element={<Seguros />} />
         <Route path="/gestion-patrimonial"   element={<Inversion />} />
         <Route path="/inversion"             element={<Inversion />} />
         <Route path="/calculadoras"          element={<Calculadoras />} />
@@ -52,6 +56,7 @@ export default function App() {
         <Route path="/documentacion"        element={<Documentacion />} />
         <Route path="/politica-privacidad"  element={<PoliticaPrivacidad />} />
         <Route path="/politica-cookies"     element={<PoliticaCookies />} />
+        <Route path="/blog"                  element={<Blog />} />
         <Route path="/admin"               element={<Admin />} />
       </Routes>
     </BrowserRouter>

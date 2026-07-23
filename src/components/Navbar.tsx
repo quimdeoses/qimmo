@@ -6,9 +6,10 @@ const NAV = [
   { label: 'Buscar',    href: '/buscar' },
   { label: 'Vender',    href: '/vender' },
   { label: 'Alquilar',  href: '/alquilar' },
-  { label: 'Hipotecas', href: '/financiacion' },
   { label: 'Inversión', href: '/inversion' },
-  { label: 'Contacto',  href: '/contacto' },
+  { label: 'Hipotecas', href: '/hipotecas' },
+  { label: 'Seguros',   href: '/seguros' },
+  { label: 'Blog',      href: '/blog' },
 ]
 
 export default function Navbar() {

@@ -77,6 +77,66 @@ export default function Alquilar() {
         </div>
       </section>
 
+      {/* ── PARTNER REFORMA ── */}
+<section className="py-16 bg-white">
+  <div className="max-w-screen-xl mx-auto px-6 lg:px-10">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <p className="label mb-3">Pon el inmueble a punto</p>
+        <h2 className="h2 text-navy mb-4">
+          Un piso bien preparado se alquila antes — y mejor.
+        </h2>
+        <p className="font-inter text-base leading-relaxed mb-6" style={{ color: '#4B5563' }}>
+          A veces la diferencia entre alquilar en 12 días o en 3 meses es una mano de pintura, unos suelos nuevos o una cocina actualizada. Como colaboradores de <strong>Servei Estació</strong> — entre otros reformistas de confianza — conectamos a nuestros propietarios con profesionales que pueden poner tu inmueble en su mejor versión antes de salir al mercado, con precios negociados y plazos rápidos.
+        </p>
+        <div className="space-y-3 mb-8">
+          {[
+            'Pintura, suelos, azulejos y carpintería',
+            'Reformas de baño y cocina en tiempo récord',
+            'Presupuesto en 48h, sin compromiso',
+            'Coordinación completa incluida en el servicio qimmo',
+          ].map(item => (
+            <div key={item} className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#C49A3C' }} />
+              <p className="font-inter text-sm" style={{ color: '#4B5563' }}>{item}</p>
+            </div>
+          ))}
+        </div>
+        <a href="/contacto" className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-inter font-semibold text-sm transition-all" style={{ background: '#0D1F3C', color: 'white' }}>
+          Hablar sobre mi inmueble
+        </a>
+      </div>
+      <div className="rounded-2xl p-8" style={{ background: '#F7F6F2', border: '1px solid #E2E0DA' }}>
+        <p className="font-inter text-xs font-semibold uppercase tracking-widest mb-6" style={{ color: '#9CA3AF' }}>Partners reformistas</p>
+        <div className="space-y-4">
+          {[
+            { name: 'Servei Estació', domain: 'serveiestacio.com', role: 'Bricolaje y reformas integrales' },
+            { name: 'Otros colaboradores', domain: '', role: 'Red de reformistas locales de confianza' },
+          ].map(p => (
+            <div key={p.name} className="flex items-center gap-4 p-4 rounded-xl bg-white" style={{ border: '1px solid #E2E0DA' }}>
+              {p.domain ? (
+                <img src={`https://logo.clearbit.com/${p.domain}`} alt={p.name} width={28} height={28} className="object-contain shrink-0"
+                  onError={e => { e.currentTarget.style.display = 'none' }} />
+              ) : (
+                <div className="w-7 h-7 rounded-md shrink-0 flex items-center justify-center" style={{ background: '#E2E0DA' }}>
+                  <span className="font-inter font-bold text-[10px]" style={{ color: '#9CA3AF' }}>+</span>
+                </div>
+              )}
+              <div>
+                <p className="font-jakarta font-bold text-sm text-navy">{p.name}</p>
+                <p className="font-inter text-xs" style={{ color: '#9CA3AF' }}>{p.role}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="font-inter text-xs mt-4" style={{ color: '#9CA3AF' }}>
+          Seleccionamos colaboradores por calidad de trabajo y puntualidad, no por precio.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
       {/* ── MODALIDADES ───────────────────────────────────────────────── */}
       <section className="max-w-screen-xl mx-auto px-6 lg:px-10 py-24">
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-16 items-start">

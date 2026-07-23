@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import {
   ArrowRight, BadgeCheck, Search,
   FileCheck, Building2, CheckCircle, Info, Calculator,
-  Shield
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -33,22 +32,6 @@ const BANCOS = [
   { name: 'UCI',         domain: 'uci.com' },
 ]
 
-const SEGUROS = [
-  {
-    name: 'SEAG',
-    full: 'Seguro de Impago de Alquiler',
-    domain: 'seag.es',
-    desc: 'Seguro de impago de alquiler. Protege al propietario frente a inquilinos morosos, cubriendo rentas impagadas y gastos jurídicos.',
-    color: '#1a3a5c',
-  },
-  {
-    name: 'MAPFRE',
-    full: 'Seguros de Hogar y Vida',
-    domain: 'mapfre.es',
-    desc: 'Seguros de hogar, vida y protección de pagos. Coberturas completas para propietarios, compradores y arrendatarios.',
-    color: '#d01012',
-  },
-]
 
 const PASOS = [
   { num: '01', icon: Search,       title: 'Análisis de tu perfil',    desc: 'Estudiamos tu situación financiera, ingresos, ahorros y perfil de riesgo para definir el importe y plazo óptimo.' },
@@ -112,7 +95,7 @@ export default function Hipotecas() {
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20 lg:py-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             <div>
-              <p className="label mb-4" style={{ color: '#C49A3C' }}>Hipotecas · Seguros</p>
+              <p className="label mb-4" style={{ color: '#C49A3C' }}>Hipotecas · Financiación</p>
               <h1 className="h1 text-white mb-5">
                 La mejor hipoteca<br />para tu perfil.
               </h1>
@@ -314,43 +297,65 @@ export default function Hipotecas() {
         </div>
       </section>
 
-      {/* ── SEGUROS ─────────────────────────────────────────────── */}
+      {/* ── REFORMA FINANCING ── */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="mb-12">
-            <p className="label mb-4">Seguros</p>
-            <h2 className="h2 text-navy mb-3">Protección para tu inmueble</h2>
-            <p className="font-inter text-base leading-relaxed max-w-xl" style={{ color: '#6B7280' }}>
-              Somos colaboradores de las aseguradoras líderes en el sector inmobiliario. Te ofrecemos cobertura completa para alquiler, compraventa y patrimonio.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {SEGUROS.map(s => (
-              <div key={s.name} className="card flex flex-col gap-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-                    style={{ background: '#F7F6F2', border: '1px solid #E2E0DA' }}>
-                    <img
-                      src={`https://logo.clearbit.com/${s.domain}`}
-                      alt={s.name}
-                      className="w-9 h-9 object-contain"
-                      onError={e => {
-                        e.currentTarget.style.display = 'none'
-                      }}
-                    />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <p className="label mb-4">Más allá de la hipoteca</p>
+              <h2 className="h2 text-navy mb-5">
+                También financiamos la reforma.
+              </h2>
+              <p className="font-inter text-base leading-relaxed mb-6" style={{ color: '#4B5563' }}>
+                Comprar un inmueble que necesita reforma es una oportunidad — si tienes la financiación resuelta. En qimmo gestionamos préstamos de reforma vinculados o independientes de la hipoteca, para que puedas acometer las obras desde el primer día sin descapitalizarte.
+              </p>
+              <div className="space-y-3">
+                {[
+                  'Préstamos de reforma desde 10.000€ hasta 100.000€',
+                  'Plazos de hasta 10 años con cuotas adaptadas',
+                  'Posibilidad de vincularlo a la hipoteca principal',
+                  'Gestión conjunta: hipoteca + reforma en un solo proceso',
+                ].map(item => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 shrink-0" style={{ background: '#C49A3C' }} />
+                    <p className="font-inter text-sm" style={{ color: '#4B5563' }}>{item}</p>
                   </div>
-                  <div>
-                    <p className="font-jakarta font-bold text-navy text-lg">{s.name}</p>
-                    <p className="font-inter text-xs font-semibold uppercase tracking-wide" style={{ color: '#C49A3C' }}>{s.full}</p>
-                  </div>
-                </div>
-                <p className="font-inter text-sm leading-relaxed" style={{ color: '#4B5563' }}>{s.desc}</p>
-                <div className="flex items-center gap-2 mt-auto pt-2">
-                  <Shield size={13} style={{ color: '#C49A3C' }} />
-                  <span className="font-inter text-xs font-semibold" style={{ color: '#C49A3C' }}>Colaborador oficial</span>
-                </div>
+                ))}
               </div>
-            ))}
+              <a href="#contacto-hipoteca" className="btn-primary mt-8 inline-flex" style={{ background: '#C49A3C', borderColor: '#C49A3C' }}>
+                Consultar financiación de reforma
+              </a>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { val: '10K – 100K€', label: 'Importe de reforma' },
+                { val: '10 años',     label: 'Plazo máximo' },
+                { val: '48h',         label: 'Respuesta inicial' },
+                { val: '0€',          label: 'Coste de gestión' },
+              ].map(s => (
+                <div key={s.label} className="card text-center">
+                  <p className="font-jakarta font-black text-2xl mb-1" style={{ color: '#C49A3C' }}>{s.val}</p>
+                  <p className="font-inter text-xs" style={{ color: '#9CA3AF' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Link to Seguros page */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6"
+            style={{ background: '#F7F6F2', border: '1px solid #E2E0DA' }}>
+            <div>
+              <p className="label mb-2">Protege tu operación</p>
+              <h3 className="font-jakarta font-bold text-navy text-xl mb-1">¿Necesitas también un seguro?</h3>
+              <p className="font-inter text-sm" style={{ color: '#6B7280' }}>Gestionamos seguros de hogar, impago de alquiler y vida — con SEAG y MAPFRE como partners.</p>
+            </div>
+            <a href="/seguros" className="btn-primary shrink-0" style={{ background: '#C49A3C', borderColor: '#C49A3C' }}>
+              Ver seguros <span style={{ marginLeft: 4 }}>→</span>
+            </a>
           </div>
         </div>
       </section>
