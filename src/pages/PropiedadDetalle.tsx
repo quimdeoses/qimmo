@@ -10,7 +10,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { supabase, type Propiedad } from '../lib/supabase'
+import { supabase, supabaseReady, type Propiedad } from '../lib/supabase'
 
 // ── Dot marker for location map ───────────────────────────────────────────
 const dotMarker = L.divIcon({
@@ -76,6 +76,7 @@ export default function PropiedadDetalle() {
 
   useEffect(() => {
     if (!ref) return
+    if (!supabaseReady) { setPropiedad(null); return }
     supabase.from('propiedades').select('*').eq('ref', ref).eq('publicado', true).single()
       .then(({ data }) => {
         const p = data as Propiedad | null

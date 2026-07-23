@@ -8,7 +8,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { supabase, type Propiedad } from '../lib/supabase'
+import { supabase, supabaseReady, type Propiedad } from '../lib/supabase'
 
 type TipoProp = Propiedad['tipo']
 type ZonaProp = Propiedad['zona']
@@ -215,6 +215,7 @@ export default function Propiedades() {
   const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
+    if (!supabaseReady) { setLoadingProps(false); return }
     supabase.from('propiedades').select('*').eq('publicado', true).order('created_at', { ascending: false })
       .then(({ data }) => { setAllProps((data ?? []) as Propiedad[]); setLoadingProps(false) })
   }, [])
