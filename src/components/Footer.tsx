@@ -63,16 +63,32 @@ export default function Footer() {
               </a>
               <div className="flex items-start gap-2.5 text-sm font-inter" style={{ color: 'rgba(255,255,255,0.40)' }}>
                 <MapPin size={13} className="mt-0.5 shrink-0" />
-                Barcelona & Área Metropolitana
+                <span>C/ Balmes 188, 6º 2ª<br />08006 Barcelona</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="font-inter text-xs" style={{ color: 'rgba(255,255,255,0.20)' }}>
-            © {new Date().getFullYear()} qimmo · Todos los derechos reservados
-          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <p className="font-inter text-xs" style={{ color: 'rgba(255,255,255,0.20)' }}>
+              © {new Date().getFullYear()} qimmo · Todos los derechos reservados
+            </p>
+            <Link to="/politica-privacidad"
+              className="font-inter text-xs transition-colors"
+              style={{ color: 'rgba(255,255,255,0.25)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}>
+              Política de privacidad
+            </Link>
+            <Link to="/politica-cookies"
+              className="font-inter text-xs transition-colors"
+              style={{ color: 'rgba(255,255,255,0.25)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}>
+              Política de cookies
+            </Link>
+          </div>
           <a href="https://vivviatech.com" target="_blank" rel="noopener noreferrer"
             className="font-inter text-xs transition-colors"
             style={{ color: 'rgba(255,255,255,0.18)' }}

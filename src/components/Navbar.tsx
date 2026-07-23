@@ -3,8 +3,10 @@ import { Link, useLocation } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 
 const NAV = [
+  { label: 'Buscar',    href: '/buscar' },
   { label: 'Vender',    href: '/vender' },
   { label: 'Alquilar',  href: '/alquilar' },
+  { label: 'Hipotecas', href: '/financiacion' },
   { label: 'Inversión', href: '/inversion' },
   { label: 'Contacto',  href: '/contacto' },
 ]
