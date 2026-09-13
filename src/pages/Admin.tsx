@@ -257,24 +257,24 @@ function PropForm({ initial, onSave, onCancel }: {
 
   return (
     <form onSubmit={save} className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {F('Referencia *', <input className="input w-full" placeholder="QIM-001" value={form.ref} onChange={set('ref')} disabled={editing} />)}
         {F('Título *', <input className="input w-full" placeholder="Piso en Eixample" value={form.titulo} onChange={set('titulo')} />)}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {F('Tipo', <select className="input w-full" value={form.tipo} onChange={set('tipo')}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select>)}
         {F('Zona', <select className="input w-full" value={form.zona} onChange={set('zona')}>{ZONAS.map(z => <option key={z}>{z}</option>)}</select>)}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {F('Barrio', <input className="input w-full" placeholder="Eixample Dreta" value={form.barrio} onChange={set('barrio')} />)}
         {F('Dirección', <input className="input w-full" placeholder="C/ Balmes 50, 3º 1ª" value={form.direccion} onChange={set('direccion')} />)}
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {F('Precio € *', <input className="input w-full" type="number" placeholder="350000" value={form.precio} onChange={set('precio')} />)}
         {F('m² *', <input className="input w-full" type="number" placeholder="85" value={form.m2} onChange={set('m2')} />)}
         {F('Cert. energético', <select className="input w-full" value={form.energia} onChange={set('energia')}>{ENERGIAS.map(e => <option key={e}>{e}</option>)}</select>)}
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {F('Habitaciones', <input className="input w-full" type="number" placeholder="3" value={form.habitaciones} onChange={set('habitaciones')} />)}
         {F('Baños', <input className="input w-full" type="number" placeholder="2" value={form.banos} onChange={set('banos')} />)}
         {F('Planta', <input className="input w-full" placeholder="3ª" value={form.planta} onChange={set('planta')} />)}
@@ -290,26 +290,26 @@ function PropForm({ initial, onSave, onCancel }: {
       {F('Badge', <select className="input w-full" value={form.badge} onChange={set('badge')}>{BADGES.map(b => <option key={b} value={b}>{b || '— Sin badge —'}</option>)}</select>)}
       {F('Descripción', <textarea className="input w-full resize-none" rows={5} placeholder="Descripción del inmueble…" value={form.descripcion} onChange={set('descripcion')} />)}
       {F('Características (una por línea)', <textarea className="input w-full resize-none font-mono text-xs" rows={5} placeholder={'Suelos de parquet\nCocina equipada\nPuertas de roble'} value={form.caracteristicas} onChange={set('caracteristicas')} />)}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {F('Latitud', <input className="input w-full" placeholder="41.3874" value={form.lat} onChange={set('lat')} />)}
         {F('Longitud', <input className="input w-full" placeholder="2.1686" value={form.lng} onChange={set('lng')} />)}
       </div>
       <PhotoUploader propRef={form.ref} current={photos} onChange={setPhotos} />
       <div className="flex items-center gap-3 pt-2" style={{ borderTop: '1px solid #E2E0DA' }}>
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.publicado} onChange={() => toggle('publicado')} className="w-4 h-4" style={{ accentColor: '#0D1F3C' }} />
+          <input type="checkbox" checked={form.publicado} onChange={() => toggle('publicado')} className="w-4 h-4 shrink-0" style={{ accentColor: '#0D1F3C' }} />
           <span className="font-inter text-sm font-semibold" style={{ color: form.publicado ? '#0D1F3C' : '#9CA3AF' }}>
             {form.publicado ? 'Publicada — visible en la web' : 'Borrador — no visible en la web'}
           </span>
         </label>
       </div>
       {err && <p className="font-inter text-xs text-red-500">{err}</p>}
-      <div className="flex gap-3 pt-2">
-        <button type="submit" disabled={saving} className="btn-primary gap-2">
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <button type="submit" disabled={saving} className="btn-primary gap-2 justify-center">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
           {saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear propiedad'}
         </button>
-        <button type="button" onClick={onCancel} className="btn-outline">Cancelar</button>
+        <button type="button" onClick={onCancel} className="btn-outline justify-center">Cancelar</button>
       </div>
     </form>
   )
@@ -531,14 +531,14 @@ function SectionPropiedades({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="font-jakarta font-bold text-navy text-2xl">Propiedades</h1>
           <p className="font-inter text-sm mt-1" style={{ color: '#9CA3AF' }}>
             {props.filter(p => p.publicado).length} publicadas · {props.filter(p => !p.publicado).length} borradores
           </p>
         </div>
-        <button onClick={() => setModal('new')} className="btn-primary gap-2">
+        <button onClick={() => setModal('new')} className="btn-primary gap-2 justify-center w-full sm:w-auto">
           <Plus size={15} /> Nueva propiedad
         </button>
       </div>
@@ -592,14 +592,14 @@ function SectionPropiedades({
 
       {/* New property modal */}
       {modal === 'new' && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center py-8 px-4 overflow-y-auto"
+        <div className="fixed inset-0 z-50 flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4 overflow-y-auto"
           style={{ background: 'rgba(13,31,60,0.6)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-auto">
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #E2E0DA' }}>
+          <div className="bg-white sm:rounded-2xl w-full max-w-2xl min-h-screen sm:min-h-0 shadow-2xl my-auto">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 sticky top-0 bg-white z-10" style={{ borderBottom: '1px solid #E2E0DA' }}>
               <h2 className="font-jakarta font-bold text-navy text-lg">Nueva propiedad</h2>
               <button onClick={() => setModal(null)} style={{ color: '#6B7280' }}><X size={18} /></button>
             </div>
-            <div className="px-6 py-6 overflow-y-auto" style={{ maxHeight: '80vh' }}>
+            <div className="px-4 sm:px-6 py-6 overflow-y-auto" style={{ maxHeight: '80vh' }}>
               <PropForm initial={null} onSave={() => { load(); setModal(null); notify('Propiedad creada') }} onCancel={() => setModal(null)} />
             </div>
           </div>
@@ -645,16 +645,16 @@ function SectionPropDetail({ prop, onBack, notify }: {
             ? <img src={current.imagen} alt={current.titulo} className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center" style={{ background: '#F0F4FA' }}><Home size={40} style={{ color: '#C4C0B8' }} /></div>}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,31,60,0.7) 0%, transparent 60%)' }} />
-          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-            <div>
+          <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
               <p className="font-inter text-xs mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>{current.barrio} · {current.tipo}</p>
-              <p className="font-jakarta font-bold text-white text-xl">{current.titulo}</p>
+              <p className="font-jakarta font-bold text-white text-lg sm:text-xl truncate">{current.titulo}</p>
             </div>
-            <span className="font-jakarta font-bold text-2xl" style={{ color: '#C49A3C' }}>{fmt(current.precio)}</span>
+            <span className="font-jakarta font-bold text-xl sm:text-2xl shrink-0" style={{ color: '#C49A3C' }}>{fmt(current.precio)}</span>
           </div>
         </div>
-        <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: '1px solid #E2E0DA' }}>
-          <div className="flex gap-4 font-inter text-sm" style={{ color: '#6B7280' }}>
+        <div className="px-4 sm:px-5 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style={{ borderTop: '1px solid #E2E0DA' }}>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 font-inter text-sm" style={{ color: '#6B7280' }}>
             {current.m2 && <span>{current.m2} m²</span>}
             {current.habitaciones && <span>{current.habitaciones} hab.</span>}
             {current.banos && <span>{current.banos} baños</span>}
@@ -666,12 +666,12 @@ function SectionPropDetail({ prop, onBack, notify }: {
           <div className="flex gap-2">
             {current.publicado && (
               <a href={`/buscar/${current.ref}`} target="_blank"
-                className="font-inter text-xs font-semibold px-3 py-1.5 rounded-lg"
+                className="flex-1 sm:flex-none text-center font-inter text-xs font-semibold px-3 py-1.5 rounded-lg"
                 style={{ background: '#F0F4FA', color: '#0D1F3C' }}>
                 Ver en web →
               </a>
             )}
-            <button onClick={() => setEditing(true)} className="btn-primary gap-1.5" style={{ padding: '0.4rem 1rem', fontSize: 12 }}>
+            <button onClick={() => setEditing(true)} className="btn-primary gap-1.5 flex-1 sm:flex-none justify-center" style={{ padding: '0.4rem 1rem', fontSize: 12 }}>
               <Pencil size={12} /> Editar
             </button>
           </div>
@@ -703,7 +703,7 @@ function SectionPropDetail({ prop, onBack, notify }: {
       </div>
 
       {tab === 'info' && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { label: 'Dirección', val: current.direccion || '—' },
             { label: 'Zona', val: current.zona },
@@ -718,13 +718,13 @@ function SectionPropDetail({ prop, onBack, notify }: {
             </div>
           ))}
           {current.descripcion && (
-            <div className="card col-span-2">
+            <div className="card sm:col-span-2">
               <p className="font-inter text-[10px] uppercase tracking-widest mb-2" style={{ color: '#9CA3AF' }}>Descripción</p>
               <p className="font-inter text-sm leading-relaxed" style={{ color: '#4B5563' }}>{current.descripcion}</p>
             </div>
           )}
           {current.caracteristicas?.length > 0 && (
-            <div className="card col-span-2">
+            <div className="card sm:col-span-2">
               <p className="font-inter text-[10px] uppercase tracking-widest mb-2" style={{ color: '#9CA3AF' }}>Características</p>
               <ul className="space-y-1">
                 {current.caracteristicas.map((c, i) => (
@@ -747,14 +747,14 @@ function SectionPropDetail({ prop, onBack, notify }: {
 
       {/* Edit modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center py-8 px-4 overflow-y-auto"
+        <div className="fixed inset-0 z-50 flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4 overflow-y-auto"
           style={{ background: 'rgba(13,31,60,0.6)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-auto">
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #E2E0DA' }}>
+          <div className="bg-white sm:rounded-2xl w-full max-w-2xl min-h-screen sm:min-h-0 shadow-2xl my-auto">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 sticky top-0 bg-white z-10" style={{ borderBottom: '1px solid #E2E0DA' }}>
               <h2 className="font-jakarta font-bold text-navy text-lg">Editar — {current.ref}</h2>
               <button onClick={() => setEditing(false)} style={{ color: '#6B7280' }}><X size={18} /></button>
             </div>
-            <div className="px-6 py-6 overflow-y-auto" style={{ maxHeight: '80vh' }}>
+            <div className="px-4 sm:px-6 py-6 overflow-y-auto" style={{ maxHeight: '80vh' }}>
               <PropForm initial={current}
                 onSave={async () => {
                   const { data } = await supabase.from('propiedades').select('*').eq('ref', current.ref).single()
