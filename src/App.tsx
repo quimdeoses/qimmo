@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import WhatsAppButton from './components/WhatsAppButton'
 import CookieBanner from './components/CookieBanner'
 import Inicio              from './pages/Inicio'
@@ -24,13 +25,19 @@ import Equipo              from './pages/Equipo'
 import Documentacion       from './pages/Documentacion'
 import PoliticaPrivacidad  from './pages/PoliticaPrivacidad'
 import PoliticaCookies     from './pages/PoliticaCookies'
-import Admin               from './pages/Admin'
+const Admin = lazy(() => import('./pages/Admin'))
+
+// WhatsApp y cookies solo en la web pública, no en el CRM
+function PublicWidgets() {
+  const { pathname } = useLocation()
+  if (pathname.startsWith('/admin')) return null
+  return <><WhatsAppButton /><CookieBanner /></>
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <WhatsAppButton />
-      <CookieBanner />
+      <PublicWidgets />
       <Routes>
         <Route path="/"                      element={<Inicio />} />
         <Route path="/buscar"                element={<Propiedades />} />
@@ -59,7 +66,7 @@ export default function App() {
         <Route path="/politica-cookies"     element={<PoliticaCookies />} />
         <Route path="/blog"                  element={<Blog />} />
         <Route path="/blog/:slug"            element={<BlogPost />} />
-        <Route path="/admin"               element={<Admin />} />
+        <Route path="/admin"               element={<Suspense fallback={null}><Admin /></Suspense>} />
       </Routes>
     </BrowserRouter>
   )

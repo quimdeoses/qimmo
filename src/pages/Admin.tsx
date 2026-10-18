@@ -1,15 +1,21 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   supabase, supabaseReady, type Propiedad, type TipoProp, type ZonaProp,
   type EnergiaCert, type BadgeProp,
 } from '../lib/supabase'
 import {
-  Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle, AlertCircle,
+  Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle,
   LogOut, ImagePlus, Loader2, ChevronRight, Users, Home, Calendar,
-  Phone, Mail, MessageSquare, ArrowLeft, Clock, MapPin, Building2,
-  ChevronDown, ChevronUp, Star, FileText, BookOpen, Receipt,
+  Phone, Mail, ArrowLeft, Clock, MapPin, Building2,
+  ChevronDown, ChevronUp, FileText, BookOpen, Receipt, LayoutDashboard, Search, Menu,
 } from 'lucide-react'
 import SectionFacturas from './admin/Facturas'
+import SectionInicio from './admin/Inicio'
+import { ToastStack, CommandPalette, type ToastItem, type CommandItem } from './admin/arc/overlays'
+import { spring, sectionEnter } from './admin/arc/motion'
+import { Logo } from './admin/arc/components'
+import './admin/arc/arc.css'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Lead {
@@ -39,7 +45,7 @@ interface Visita {
   created_at: string
 }
 
-type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
+type Section = 'inicio' | 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const TIPOS:    TipoProp[]    = ['Piso', 'Àtic', 'Duplex', 'Casa', 'Local', 'Oficina', 'Nave']
@@ -81,22 +87,6 @@ function fmt(n: number) { return n.toLocaleString('es-ES') + ' €' }
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
 }
-function fmtDateShort(s: string) {
-  return new Date(s).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-}
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function Toast({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t) }, [onClose])
-  return (
-    <div className="fixed top-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl"
-      style={{ background: ok ? '#0D1F3C' : '#DC2626', color: 'white', maxWidth: 360 }}>
-      {ok ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-      <span className="font-inter text-sm flex-1">{msg}</span>
-      <button onClick={onClose}><X size={14} /></button>
-    </div>
-  )
-}
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 function Login() {
@@ -114,7 +104,7 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D1F3C' }}>
       <div className="bg-white rounded-2xl p-10 w-full max-w-sm shadow-2xl">
-        <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-12 w-auto mb-8 mx-auto" />
+        <div className="flex justify-center mb-8"><Logo width={130} /></div>
         <h1 className="font-jakarta font-bold text-navy text-xl text-center mb-6">Admin · qimmo</h1>
         <form onSubmit={submit} className="space-y-4">
           <input type="email" placeholder="Email" value={email} autoFocus autoComplete="username"
@@ -883,24 +873,26 @@ function SectionVisitas({ notify }: { notify: (m: string, ok?: boolean) => void 
 }
 
 // ── Sidebar nav item ──────────────────────────────────────────────────────────
-function NavItem({ icon: Icon, label, active, badge, onClick }: {
+function NavItem({ icon: Icon, label, active, badge, onClick, layoutGroup }: {
   icon: React.FC<{ size?: number; style?: React.CSSProperties }>
-  label: string; active: boolean; badge?: number; onClick: () => void
+  label: string; active: boolean; badge?: number; onClick: () => void; layoutGroup: string
 }) {
   return (
-    <button onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left"
-      style={{
-        background: active ? '#F0F4FA' : 'transparent',
-        color: active ? '#0D1F3C' : '#6B7280',
-      }}>
-      <Icon size={17} style={{ color: active ? '#0D1F3C' : '#9CA3AF' }} />
-      <span className="font-inter text-sm font-semibold flex-1">{label}</span>
-      {badge != null && badge > 0 && (
-        <span className="px-2 py-0.5 rounded-full font-inter text-[10px] font-bold"
-          style={{ background: '#EFF6FF', color: '#2563EB' }}>{badge}</span>
+    <motion.button onClick={onClick} whileTap={{ scale: 0.98 }} transition={spring.snappy}
+      className="relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"
+      style={{ color: active ? 'var(--foreground)' : 'var(--text-secondary)' }}>
+      {active && (
+        <motion.span layoutId={`nav-active-${layoutGroup}`} className="absolute inset-0 rounded-xl"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-resting)' }}
+          transition={spring.snappy} />
       )}
-    </button>
+      <Icon size={16} style={{ position: 'relative', color: active ? 'var(--accent)' : 'var(--text-muted)' }} />
+      <span className="relative text-sm font-medium flex-1">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="relative arc-pill"
+          style={{ background: 'color-mix(in oklch, var(--gold) 16%, transparent)', color: '#9A7424' }}>{badge}</span>
+      )}
+    </motion.button>
   )
 }
 
@@ -1132,28 +1124,33 @@ function BlogPostModal({ post, onClose, onSaved, notify }: {
 }
 
 // ── SECTION: Mandato ──────────────────────────────────────────────────────────
-function SectionMandato() {
+function SearchButton({ compact = false, onClick }: { compact?: boolean; onClick: () => void }) {
   return (
-    <div style={{ height: 'calc(100vh - 56px)', margin: '0 -16px' }}>
-      <iframe
-        src="/mandato.html"
-        title="Generar Mandato"
-        style={{ width: '100%', height: '100%', border: 'none' }}
-      />
-    </div>
+    <button onClick={onClick}
+      className={`flex items-center gap-2 rounded-xl text-sm ${compact ? 'p-2' : 'w-full px-3 py-2'}`}
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+      <Search size={15} />
+      {!compact && <><span className="flex-1 text-left">Buscar…</span><span className="arc-kbd">⌘K</span></>}
+    </button>
   )
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const [authed, setAuthed]       = useState<boolean | null>(null)
-  const [section, setSection]     = useState<Section>('pipeline')
+  const [section, setSection]     = useState<Section>('inicio')
   const [selectedProp, setSelectedProp] = useState<Propiedad | null>(null)
-  const [toast, setToast]         = useState<{ msg: string; ok: boolean } | null>(null)
+  const [toasts, setToasts]       = useState<ToastItem[]>([])
   const [newLeadsCount, setNewLeadsCount] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [cmdOpen, setCmdOpen]     = useState(false)
+  const [cmdData, setCmdData]     = useState<{
+    leads: Lead[]; props: Propiedad[]; invoices: { number: string; client_name: string | null; total: number | null }[]
+  } | null>(null)
 
-  const notify = (msg: string, ok = true) => setToast({ msg, ok })
+  const notify = useCallback((msg: string, ok = true) =>
+    setToasts(ts => [...ts, { id: Date.now() + Math.random(), msg, ok }]), [])
+  const dismiss = useCallback((id: number) => setToasts(ts => ts.filter(t => t.id !== id)), [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session))
@@ -1166,6 +1163,26 @@ export default function Admin() {
     supabase.from('leads').select('id', { count: 'exact' }).eq('estado', 'nuevo')
       .then(({ count }) => setNewLeadsCount(count ?? 0))
   }, [authed])
+
+  // ⌘K / Ctrl+K abre la paleta de comandos
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(o => !o) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
+    if (!cmdOpen || cmdData) return
+    Promise.all([
+      supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(300),
+      supabase.from('propiedades').select('*').order('created_at', { ascending: false }),
+      supabase.from('invoices').select('number,client_name,total').order('issued_at', { ascending: false }),
+    ]).then(([l, p, i]) => setCmdData({
+      leads: (l.data ?? []) as Lead[], props: (p.data ?? []) as Propiedad[], invoices: i.data ?? [],
+    }))
+  }, [cmdOpen, cmdData])
 
   if (authed === null) return null
   if (!authed) return <Login />
@@ -1184,6 +1201,7 @@ export default function Admin() {
   }
 
   const NAV = [
+    { id: 'inicio'      as Section, icon: LayoutDashboard, label: 'Inicio',    badge: undefined },
     { id: 'pipeline'    as Section, icon: Users,    label: 'Pipeline',     badge: newLeadsCount },
     { id: 'propiedades' as Section, icon: Home,     label: 'Propiedades',  badge: undefined },
     { id: 'visitas'     as Section, icon: Calendar, label: 'Visitas',      badge: undefined },
@@ -1192,80 +1210,98 @@ export default function Admin() {
     { id: 'blog'        as Section, icon: BookOpen, label: 'Blog',         badge: undefined },
   ]
 
+  const commands: CommandItem[] = [
+    ...NAV.map(n => ({ id: `nav-${n.id}`, group: 'Ir a', label: n.label, icon: <n.icon size={15} />, run: () => goTo(n.id) })),
+    { id: 'act-web', group: 'Acciones', label: 'Ver la web pública', icon: <MapPin size={15} />, run: () => window.open('/', '_blank') },
+    { id: 'act-logout', group: 'Acciones', label: 'Cerrar sesión', icon: <LogOut size={15} />, run: logout },
+    ...(cmdData?.leads ?? []).map(l => ({
+      id: `lead-${l.id}`, group: 'Leads', label: l.nombre, hint: [l.telefono, l.email].filter(Boolean).join(' · '),
+      icon: <Users size={15} />, run: () => goTo('pipeline'),
+    })),
+    ...(cmdData?.props ?? []).map(p => ({
+      id: `prop-${p.id}`, group: 'Propiedades', label: p.titulo, hint: `${p.ref} · ${p.barrio || p.zona}`,
+      icon: <Home size={15} />, run: () => handleSelectProp(p),
+    })),
+    ...(cmdData?.invoices ?? []).map(i => ({
+      id: `inv-${i.number}`, group: 'Facturas', label: `${i.number} · ${i.client_name ?? ''}`,
+      hint: i.total != null ? fmt(Math.round(Number(i.total) * 100) / 100) : undefined,
+      icon: <Receipt size={15} />, run: () => goTo('facturas'),
+    })),
+  ]
+
   const activeSection = section === 'prop_detail' ? 'propiedades' : section
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#F7F6F2' }}>
-      {toast && <Toast msg={toast.msg} ok={toast.ok} onClose={() => setToast(null)} />}
+    <div className="arc min-h-screen flex">
+      <ToastStack toasts={toasts} onDismiss={dismiss} />
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} items={commands} loading={!cmdData} />
 
       {/* ── SIDEBAR ── */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 sticky top-0 h-screen bg-white"
-        style={{ borderRight: '1px solid #E2E0DA' }}>
-        {/* Logo */}
-        <div className="px-5 py-5" style={{ borderBottom: '1px solid #E2E0DA' }}>
-          <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-10 w-auto" />
-          <p className="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1" style={{ color: '#C49A3C' }}>
-            CRM · Admin
-          </p>
+      <aside className="hidden md:flex flex-col w-60 shrink-0 sticky top-0 h-screen"
+        style={{ borderRight: '1px solid var(--border)', background: 'var(--surface-muted)' }}>
+        <div className="px-5 pt-5 pb-4">
+          <Logo width={96} />
+          <p className="text-[10px] font-semibold uppercase tracking-widest mt-2" style={{ color: 'var(--gold)' }}>CRM</p>
         </div>
+        <div className="px-3 pb-3"><SearchButton onClick={() => setCmdOpen(true)} /></div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto">
           {NAV.map(n => (
-            <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge}
+            <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge} layoutGroup="desktop"
               active={activeSection === n.id} onClick={() => goTo(n.id)} />
           ))}
         </nav>
 
-        {/* Bottom */}
-        <div className="px-3 py-4 space-y-1" style={{ borderTop: '1px solid #E2E0DA' }}>
+        <div className="px-3 py-4 space-y-0.5" style={{ borderTop: '1px solid var(--border)' }}>
           {!supabaseReady && (
             <div className="mx-1 mb-3 px-3 py-2 rounded-lg" style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}>
-              <p className="font-inter text-[10px] font-semibold" style={{ color: '#92400E' }}>Supabase no configurado</p>
-              <p className="font-inter text-[10px]" style={{ color: '#B45309' }}>Añade las variables de entorno en Cloudflare</p>
+              <p className="text-[10px] font-semibold" style={{ color: '#92400E' }}>Supabase no configurado</p>
+              <p className="text-[10px]" style={{ color: '#B45309' }}>Añade las variables de entorno en Cloudflare</p>
             </div>
           )}
-          <a href="/" target="_blank"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-inter text-sm transition-all w-full"
-            style={{ color: '#9CA3AF' }}>
+          <a href="/" target="_blank" className="arc-row flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm w-full"
+            style={{ color: 'var(--text-muted)' }}>
             <MapPin size={15} /> Ver web
           </a>
-          <button onClick={logout}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-inter text-sm transition-all w-full"
-            style={{ color: '#9CA3AF' }}>
+          <button onClick={logout} className="arc-row flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm w-full"
+            style={{ color: 'var(--text-muted)' }}>
             <LogOut size={15} /> Cerrar sesión
           </button>
         </div>
       </aside>
 
       {/* ── MOBILE TOPBAR ── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white h-14 flex items-center px-4 gap-3"
-        style={{ borderBottom: '1px solid #E2E0DA' }}>
-        <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-9 w-auto" />
-        <span className="font-inter text-xs font-semibold uppercase tracking-widest" style={{ color: '#C49A3C' }}>Admin</span>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <Logo width={72} />
         <div className="flex-1" />
-        <button onClick={() => setMobileMenuOpen(v => !v)} className="p-2" style={{ color: '#6B7280' }}>
-          {mobileMenuOpen ? <X size={20} /> : <ChevronDown size={20} />}
+        <SearchButton compact onClick={() => setCmdOpen(true)} />
+        <button onClick={() => setMobileMenuOpen(v => !v)} className="p-2" style={{ color: 'var(--text-secondary)' }}>
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed top-14 left-0 right-0 z-40 bg-white shadow-lg px-3 py-3 space-y-1"
-          style={{ borderBottom: '1px solid #E2E0DA' }}>
-          {NAV.map(n => (
-            <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge}
-              active={activeSection === n.id} onClick={() => goTo(n.id)} />
-          ))}
-          <button onClick={logout}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-inter text-sm w-full mt-2"
-            style={{ color: '#9CA3AF', borderTop: '1px solid #E2E0DA' }}>
-            <LogOut size={15} /> Cerrar sesión
-          </button>
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div className="md:hidden fixed top-14 left-0 right-0 z-40 px-3 py-3 space-y-0.5"
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            transition={spring.gentle}
+            style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-muted)', boxShadow: 'var(--shadow-raised)' }}>
+            {NAV.map(n => (
+              <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge} layoutGroup="mobile"
+                active={activeSection === n.id} onClick={() => goTo(n.id)} />
+            ))}
+            <button onClick={logout} className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm w-full mt-2"
+              style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border)' }}>
+              <LogOut size={15} /> Cerrar sesión
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 min-w-0 pt-0 md:pt-0 mt-14 md:mt-0">
-        <div className={`px-6 lg:px-8 py-8 ${section === 'mandato' ? 'p-0' : ''}`}>
+      <main className="flex-1 min-w-0 mt-14 md:mt-0">
+        <motion.div key={section} {...sectionEnter} className="px-5 lg:px-8 py-8">
+          {section === 'inicio' && <SectionInicio go={goTo} />}
           {section === 'pipeline' && <SectionPipeline notify={notify} />}
           {section === 'propiedades' && <SectionPropiedades notify={notify} onSelectProp={handleSelectProp} />}
           {section === 'prop_detail' && selectedProp && (
@@ -1279,7 +1315,7 @@ export default function Admin() {
           )}
           {section === 'blog' && <SectionBlog notify={notify} />}
           {section === 'facturas' && <SectionFacturas notify={notify} />}
-        </div>
+        </motion.div>
       </main>
     </div>
   )

@@ -1,0 +1,74 @@
+/* Arc UI (uiarc.dev) foundation, scoped to the admin (.arc) and tinted with
+   qimmo's navy/gold so the CRM keeps the brand. */
+.arc {
+  --neutral-0: oklch(100% 0 0);
+  --neutral-2: oklch(97.8% 0 0);
+  --neutral-3: oklch(95.8% 0 0);
+  --neutral-6: oklch(72% 0 0);
+  --neutral-7: oklch(59% 0 0);
+  --neutral-8: oklch(46% 0 0);
+  --neutral-11: oklch(15% 0 0);
+
+  --background: oklch(98.4% 0.003 250);
+  --surface: var(--neutral-0);
+  --surface-raised: var(--neutral-0);
+  --surface-muted: oklch(97.2% 0.004 250);
+  --foreground: oklch(22% 0.045 258);
+  --text-secondary: oklch(46% 0.02 258);
+  --text-muted: oklch(60% 0.015 258);
+
+  --border: oklch(93.5% 0.004 250);
+  --border-subtle: oklch(96.5% 0.003 250);
+  --border-strong: oklch(84% 0.006 250);
+
+  --accent: #0D1F3C;
+  --accent-strong: #0A172D;
+  --accent-subtle: color-mix(in oklch, #0D1F3C 8%, transparent);
+  --accent-foreground: #fff;
+  --gold: #C49A3C;
+
+  --success: oklch(52% 0.15 152);
+  --warning: oklch(62% 0.15 70);
+  --danger: oklch(55% 0.2 25);
+
+  --shadow-resting: 0 1px 2px oklch(0% 0 0 / .035);
+  --shadow-raised: 0 6px 18px oklch(0% 0 0 / .065), 0 1px 3px oklch(0% 0 0 / .035);
+  --shadow-floating: 0 20px 48px oklch(0% 0 0 / .105), 0 3px 10px oklch(0% 0 0 / .045);
+
+  --radius-control: 0.875rem;
+  --radius-panel: 1.25rem;
+  --radius-surface: 1.5rem;
+
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 0.16s;
+
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.arc .arc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow-resting);
+}
+
+.arc .arc-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; padding: 0 5px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface-muted); color: var(--text-muted);
+  font-size: 10px; font-weight: 500; line-height: 1;
+}
+
+.arc .arc-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 9999px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+
+.arc .arc-row { transition: background-color var(--duration-fast) var(--ease-standard); }
+@media (hover: hover) { .arc .arc-row:hover { background: var(--surface-muted); } }
+
+.arc .tabular { font-variant-numeric: tabular-nums; }
