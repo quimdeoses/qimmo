@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Plus, X, Loader2, Printer, Pencil, Trash2 } from 'lucide-react'
+import { Plus, X, Loader2, Printer, Pencil, Trash2, ExternalLink } from 'lucide-react'
 
 // ── Datos fijos del emisor (formato nuevo, ver Drive › Facturas › Ingresos) ────────────────────────────────
 const EMISOR = {
@@ -37,6 +37,7 @@ interface Invoice {
   client_address: string | null
   reference: string | null
   lines: Linea[] | null
+  drive_link: string | null
   created_at: string
 }
 
@@ -82,8 +83,8 @@ function printInvoice(inv: Invoice) {
   const lines = linesOf(inv)
   const subtotal = Number(inv.subtotal)
   const ivaPct = Number(inv.iva_pct)
-  const iva = inv.iva_amount != null ? Number(inv.iva_amount) : round2(subtotal * ivaPct / 100)
-  const total = inv.total != null ? Number(inv.total) : round2(subtotal + iva)
+  const iva = round2(subtotal * ivaPct / 100)
+  const total = round2(subtotal + iva)
   const concepto = `Factura nº ${inv.number} — ${inv.reference || inv.client_name || ''}`
   const logo = `${window.location.origin}/LOGO%20QIMMO%20BLUE.png`
 
@@ -237,7 +238,7 @@ function InvoiceForm({ initial, suggestedNumber, onClose, onSaved, notify }: {
       number: number.trim(),
       status,
       concept: clean[0].descripcion.split('\n')[0].slice(0, 200),
-      subtotal, iva_pct: parseFloat(ivaPct) || 0, iva_amount: iva, total,
+      subtotal, iva_pct: parseFloat(ivaPct) || 0,  // iva_amount y total los calcula la BD
       issued_at: issued, due_at: due || null,
       paid_at: status === 'pagada' ? (initial?.paid_at ?? today()) : null,
       client_name: client.trim(), client_nif: nif.trim() || null,
@@ -444,6 +445,10 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <button title="Editar" onClick={() => setModal(inv)} className="p-1.5 text-gray-400 hover:text-navy"><Pencil size={15} /></button>
                       <button title="Imprimir / PDF" onClick={() => printInvoice(inv)} className="p-1.5 text-gray-400 hover:text-navy"><Printer size={15} /></button>
+                      {inv.drive_link && (
+                        <a title="Ver en Drive" href={inv.drive_link} target="_blank" rel="noreferrer"
+                          className="inline-block p-1.5 text-gray-400 hover:text-navy"><ExternalLink size={15} /></a>
+                      )}
                     </td>
                   </tr>
                 )
