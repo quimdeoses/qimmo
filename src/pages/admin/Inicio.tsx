@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { Users, Calendar, Inbox, ArrowUpRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { MetricCard, BarChart, EmptyState } from './arc/components'
+import { MetricCard, EmptyState, SegmentedControl, TrendChart, AnimatedCounter } from './arc/components'
 import { ease } from './arc/motion'
 
 type Go = (s: 'pipeline' | 'propiedades' | 'visitas' | 'facturas') => void
@@ -60,15 +60,12 @@ export default function SectionInicio({ go }: { go: Go }) {
 
   // Leads por día (últimos 30) y comparación con los 30 anteriores
   const start = new Date(new Date(now).toDateString()).getTime() - 29 * DAY
-  const daily = Array.from({ length: 30 }, () => 0)
   let last30 = 0, prev30 = 0
   for (const l of leads) {
     const t = new Date(l.created_at).getTime()
-    if (t >= start) { daily[Math.min(29, Math.floor((t - start) / DAY))]++; last30++ }
+    if (t >= start) last30++
     else if (t >= start - 30 * DAY) prev30++
   }
-  const dayLabels = daily.map((_, i) =>
-    new Date(start + i * DAY).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))
 
   const nuevos = leads.filter(l => l.estado === 'nuevo').length
   const year = String(new Date().getFullYear())
@@ -116,15 +113,7 @@ export default function SectionInicio({ go }: { go: Go }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
         <motion.section {...stagger(4)} className="arc-card p-5 lg:col-span-3">
-          <div className="flex items-baseline justify-between mb-8">
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Leads entrantes</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Últimos 30 días</p>
-            </div>
-            <span className="font-jakarta font-semibold text-xl tabular">{last30}</span>
-          </div>
-          {ready && <BarChart data={daily} labels={dayLabels} height={120}
-            format={n => `${n} lead${n === 1 ? '' : 's'}`} />}
+          <LeadsTrend leads={leads} now={now} />
         </motion.section>
 
         <motion.section {...stagger(5)} className="arc-card p-2 lg:col-span-2">
@@ -183,6 +172,57 @@ function Header({ title, onMore }: { title: string; onMore: () => void }) {
       <button onClick={onMore} className="flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
         Ver todo <ArrowUpRight size={13} />
       </button>
+    </div>
+  )
+}
+
+// ── Tendencia de leads: periodo actual vs anterior ────────────────────────────
+type Period = '7' | '30' | '90'
+const PERIODS: { value: Period; label: string }[] = [
+  { value: '7', label: '7 días' }, { value: '30', label: '30 días' }, { value: '90', label: '90 días' },
+]
+
+function LeadsTrend({ leads, now }: { leads: LeadRow[]; now: number }) {
+  const [period, setPeriod] = useState<Period>('30')
+  const days = Number(period)
+  const bucket = days === 90 ? 3 : 1                 // 90 días → tramos de 3 días
+  const n = days / bucket
+  const end = new Date(new Date(now).toDateString()).getTime() + DAY   // fin de hoy
+  const start = end - days * DAY
+  const cur = Array.from({ length: n }, () => 0)
+  const prev = Array.from({ length: n }, () => 0)
+  for (const l of leads) {
+    const t = new Date(l.created_at).getTime()
+    if (t >= start && t < end) cur[Math.floor((t - start) / (bucket * DAY))]++
+    else if (t >= start - days * DAY && t < start) prev[Math.floor((t - start + days * DAY) / (bucket * DAY))]++
+  }
+  const labels = cur.map((_, i) =>
+    new Date(start + i * bucket * DAY).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))
+  const total = cur.reduce((a, b) => a + b, 0)
+  const prevTotal = prev.reduce((a, b) => a + b, 0)
+  const change = prevTotal ? ((total - prevTotal) / prevTotal) * 100 : null
+  const tone = change == null || change === 0 ? 'var(--text-muted)' : change > 0 ? 'var(--success)' : 'var(--danger)'
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <p className="font-jakarta font-semibold text-base">Leads entrantes</p>
+        <SegmentedControl id="leads-period" options={PERIODS} value={period} onChange={setPeriod} />
+      </div>
+      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total leads</p>
+      <AnimatedCounter value={total} className="font-jakarta font-semibold text-[2.4rem] mt-1" />
+      <p className="text-sm mt-1.5 tabular" style={{ color: tone }}>
+        {change == null
+          ? `Sin datos de los ${days} días anteriores`
+          : `${change >= 0 ? '+' : '−'}${Math.abs(change).toLocaleString('es-ES', { maximumFractionDigits: 1 })}% vs ${days} días anteriores`}
+      </p>
+      <div className="flex gap-5 mt-5 mb-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+        <span className="flex items-center gap-2"><span className="w-3.5 h-[2.5px] rounded" style={{ background: 'var(--accent)' }} />Este periodo</span>
+        <span className="flex items-center gap-2"><span className="w-3.5 h-[2.5px]"
+          style={{ background: 'repeating-linear-gradient(to right, var(--text-muted) 0 4px, transparent 4px 7px)' }} />Periodo anterior</span>
+      </div>
+      <TrendChart current={cur} previous={prev} labels={labels} height={200}
+        format={v => `${v} lead${v === 1 ? '' : 's'}`} />
     </div>
   )
 }
