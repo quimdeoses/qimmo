@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Plus, X, Loader2, Printer, Pencil, Trash2 } from 'lucide-react'
 
-// ── Datos fijos del emisor (Plantilla_Factura) ────────────────────────────────
+// ── Datos fijos del emisor (formato nuevo, ver Drive › Facturas › Ingresos) ────────────────────────────────
 const EMISOR = {
   nombre: 'QIMMO REAL ESTATE SL',
   cif: 'B93938959',
@@ -11,6 +11,7 @@ const EMISOR = {
   email: 'info@qimmo.es',
   iban: 'ES60 0182 0815 8302 0189 2475',
   banco: 'BBVA',
+  pie: 'QIMMO REAL ESTATE SL · joaquin.deoses@qimmo.es · 609 019 160 · info@qimmo.es · 93 152 10 24 · qimmo.es',
 }
 
 const LEGAL = `Esta factura ha sido emitida por QIMMO REAL ESTATE SL (en adelante, el Emisor) al amparo de lo establecido en el Real Decreto 1619/2012, de 30 de noviembre, por el que se aprueba el Reglamento por el que se regulan las obligaciones de facturación. El IVA repercutido es deducible conforme a la normativa fiscal vigente. El pago de la presente factura implica la aceptación de la prestación del servicio descrito. En caso de discrepancia, el receptor deberá comunicarlo al Emisor en el plazo de siete (7) días hábiles desde la recepción. A partir del vencimiento indicado, los importes pendientes devengarán el interés legal del dinero incrementado en dos puntos porcentuales, conforme al artículo 7 de la Ley 3/2004 de medidas de lucha contra la morosidad en operaciones comerciales.`
@@ -62,113 +63,130 @@ function linesOf(inv: Invoice): Linea[] {
   return [{ descripcion: inv.concept, cantidad: 1, precio: Number(inv.subtotal) }]
 }
 
-// Siguiente nº correlativo FAC-AAAA-NNN a partir de los ya guardados
+// Siguiente nº correlativo (formato AAAA-NNN) a partir del más alto guardado
 function nextNumber(invoices: Invoice[]): string {
-  const year = new Date().getFullYear()
-  const re = new RegExp(`^FAC-${year}-(\\d+)$`)
-  const max = invoices.reduce((m, i) => {
-    const r = re.exec(i.number)
-    return r ? Math.max(m, parseInt(r[1], 10)) : m
-  }, 0)
-  return `FAC-${year}-${String(max + 1).padStart(3, '0')}`
+  let best: [string, number] | null = null
+  for (const i of invoices) {
+    const r = /^(\d{4})-(\d+)$/.exec(i.number)
+    if (!r) continue
+    const n = parseInt(r[2], 10)
+    if (!best || r[1] > best[0] || (r[1] === best[0] && n > best[1])) best = [r[1], n]
+  }
+  return best
+    ? `${best[0]}-${String(best[1] + 1).padStart(3, '0')}`
+    : `${new Date().getFullYear()}-001`
 }
 
-// ── Documento imprimible (réplica de Plantilla_Factura) ───────────────────────
+// ── Documento imprimible (formato nuevo de Drive › Facturas › Ingresos) ───────
 function printInvoice(inv: Invoice) {
   const lines = linesOf(inv)
   const subtotal = Number(inv.subtotal)
   const ivaPct = Number(inv.iva_pct)
   const iva = inv.iva_amount != null ? Number(inv.iva_amount) : round2(subtotal * ivaPct / 100)
   const total = inv.total != null ? Number(inv.total) : round2(subtotal + iva)
-  const concepto = `Factura nº ${inv.number}${inv.reference ? ' — ' + inv.reference : ''}`
+  const concepto = `Factura nº ${inv.number} — ${inv.reference || inv.client_name || ''}`
   const logo = `${window.location.origin}/LOGO%20QIMMO%20BLUE.png`
 
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <title>Factura ${esc(inv.number)}</title>
 <style>
-  @page { size: A4; margin: 18mm 16mm; }
+  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; color: #0D1F3C; font-size: 11px; margin: 0; }
-  .wrap { max-width: 780px; margin: 0 auto; padding: 24px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+  html, body { margin: 0; background: #E5E7EB; }
+  body { font-family: Helvetica, Arial, sans-serif; color: #1F2937; font-size: 10.5px; }
+  .page { width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff; padding: 16mm 18mm 12mm;
+          display: flex; flex-direction: column; }
+  .navy { color: #0D1F3C; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; }
   /* el PNG es cuadrado con mucho margen: recortamos al área del logotipo */
-  .logo { width: 160px; height: 73px; overflow: hidden; margin-bottom: 12px; }
-  .logo img { width: 241px; margin: -84px 0 0 -40px; display: block; }
-  .emisor p { margin: 2px 0; line-height: 1.4; }
-  .title { text-align: right; }
-  .title h1 { font-size: 26px; letter-spacing: 2px; margin: 0 0 10px; }
-  .title table td { padding: 2px 0 2px 12px; text-align: right; }
-  .box { border: 1px solid #D9DDE5; border-radius: 6px; padding: 12px 14px; margin-top: 22px; }
-  .box p { margin: 2px 0; line-height: 1.4; }
-  .lbl { font-weight: bold; font-size: 10px; letter-spacing: 1px; color: #C49A3C; margin-bottom: 6px !important; }
-  table.items { width: 100%; border-collapse: collapse; margin-top: 22px; }
-  table.items th { background: #0D1F3C; color: #fff; text-align: left; padding: 8px 10px; font-size: 10px; letter-spacing: .5px; }
-  table.items td { padding: 9px 10px; border-bottom: 1px solid #E5E7EB; vertical-align: top; }
-  .num { text-align: right; white-space: nowrap; }
-  .tot { width: 280px; margin: 16px 0 0 auto; border-collapse: collapse; }
-  .tot td { padding: 6px 10px; }
-  .tot tr.total td { border-top: 2px solid #0D1F3C; font-size: 14px; font-weight: bold; }
-  .pago p { margin: 2px 0; }
-  .legal { margin-top: 40px; font-size: 8.5px; line-height: 1.5; color: #6B7280; text-align: justify; }
-  .actions { text-align: center; margin: 16px; }
+  .logo { width: 150px; height: 68px; overflow: hidden; }
+  .logo img { width: 226px; margin: -79px 0 0 -37px; display: block; }
+  .ttl { text-align: right; }
+  .ttl h1 { margin: 0; font-size: 28px; font-weight: bold; color: #0D1F3C; }
+  .ttl p { margin: 2px 0 0; color: #4B5563; font-size: 11px; }
+  .row2 { display: flex; justify-content: space-between; margin-top: 26px; }
+  .emisor p, .fechas p { margin: 0 0 3px; color: #6B7280; }
+  .emisor .name { font-size: 12.5px; font-weight: bold; color: #0D1F3C; margin-bottom: 6px; }
+  .fechas { text-align: right; }
+  .cliente { background: #EEF2F7; border-radius: 6px; padding: 14px 16px; margin-top: 34px; }
+  .cliente p { margin: 0 0 3px; color: #374151; }
+  .h { font-weight: bold; color: #0D1F3C; margin-bottom: 8px !important; }
+  table.items { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 26px; }
+  table.items th { background: #0D1F3C; color: #fff; padding: 8px 12px; text-align: left; font-size: 10.5px; }
+  table.items th:first-child { border-radius: 5px 0 0 5px; }
+  table.items th:last-child { border-radius: 0 5px 5px 0; }
+  table.items td { padding: 12px 12px; border-bottom: 1px solid #F0F1F3; vertical-align: top; line-height: 1.45; }
+  .c { text-align: center; } .r { text-align: right; white-space: nowrap; }
+  .tot { width: 262px; margin: 20px 0 0 auto; }
+  .tot div { display: flex; justify-content: space-between; padding: 4px 12px; color: #6B7280; }
+  .tot .total { background: #0D1F3C; color: #fff; font-weight: bold; font-size: 13px; padding: 8px 12px; border-radius: 5px; margin-top: 6px; }
+  .pago { margin-top: 40px; }
+  .pago p { margin: 0 0 3px; }
+  .legal { margin-top: auto; padding-top: 30px; font-size: 7.5px; line-height: 1.5; color: #6B7280; text-align: justify; }
+  .foot { border-top: 1px solid #0D1F3C; margin-top: 40px; padding-top: 6px; text-align: center; font-size: 8px; color: #6B7280; }
+  .pg { text-align: right; font-size: 8px; color: #6B7280; margin-top: 18px; }
+  .actions { text-align: center; padding: 14px; }
   .actions button { background: #0D1F3C; color: #fff; border: 0; padding: 10px 22px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-  @media print { .actions { display: none; } .wrap { padding: 0; } }
+  @media print { html, body { background: #fff; } .actions { display: none; } .page { margin: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style></head><body>
 <div class="actions"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>
-<div class="wrap">
-  <div class="head">
+<div class="page">
+  <div class="top">
+    <div class="logo"><img src="${logo}" alt="qimmo"></div>
+    <div class="ttl"><h1>FACTURA</h1><p>Nº: ${esc(inv.number)}</p></div>
+  </div>
+
+  <div class="row2">
     <div class="emisor">
-      <div class="logo"><img src="${logo}" alt="qimmo"></div>
-      <p><b>${EMISOR.nombre}</b></p>
+      <p class="name">${EMISOR.nombre}</p>
       <p>CIF: ${EMISOR.cif}</p>
       ${EMISOR.direccion.map(l => `<p>${l}</p>`).join('')}
       <p>Tel.: ${EMISOR.tel}</p>
       <p>Email: ${EMISOR.email}</p>
     </div>
-    <div class="title">
-      <h1>FACTURA</h1>
-      <table>
-        <tr><td>Nº:</td><td><b>${esc(inv.number)}</b></td></tr>
-        <tr><td>Fecha:</td><td><b>${ddmmyyyy(inv.issued_at)}</b></td></tr>
-        <tr><td>Vencimiento:</td><td><b>${ddmmyyyy(inv.due_at ?? inv.issued_at)}</b></td></tr>
-      </table>
+    <div class="fechas">
+      <p>Fecha: ${ddmmyyyy(inv.issued_at)}</p>
+      <p>Vencimiento: ${ddmmyyyy(inv.due_at ?? inv.issued_at)}</p>
     </div>
   </div>
 
-  <div class="box">
-    <p class="lbl">FACTURAR A:</p>
-    <p>Nombre / Razón social: <b>${esc(inv.client_name ?? '')}</b></p>
-    <p>NIF / CIF: <b>${esc(inv.client_nif ?? '')}</b></p>
-    <p>Dirección: ${esc(inv.client_address ?? '').replace(/\n/g, '<br>')}</p>
+  <div class="cliente">
+    <p class="h">FACTURAR A:</p>
+    <p>Nombre / Razón social: ${esc(inv.client_name ?? '')}</p>
+    <p>NIF / CIF: ${esc(inv.client_nif ?? '')}</p>
+    <p>Dirección: ${esc(inv.client_address ?? '').replace(/\n/g, ', ')}</p>
   </div>
 
   <table class="items">
-    <thead><tr><th>Descripción</th><th class="num">Cantidad</th><th class="num">Precio unit.</th><th class="num">Importe</th></tr></thead>
+    <thead><tr><th>Descripción</th><th class="c">Cantidad</th><th class="c">Precio unit.</th><th class="r">Importe</th></tr></thead>
     <tbody>
       ${lines.map(l => `<tr>
-        <td>${esc(l.descripcion).replace(/\n/g, '<br>')}</td>
-        <td class="num">${l.cantidad.toLocaleString('es-ES')}</td>
-        <td class="num">${eur(l.precio)}</td>
-        <td class="num">${eur(round2(l.cantidad * l.precio))}</td>
+        <td style="width:55%">${esc(l.descripcion).replace(/\n/g, '<br>')}</td>
+        <td class="c">${l.cantidad.toLocaleString('es-ES')}</td>
+        <td class="c">${eur(l.precio)}</td>
+        <td class="r">${eur(round2(l.cantidad * l.precio))}</td>
       </tr>`).join('')}
     </tbody>
   </table>
 
-  <table class="tot">
-    <tr><td>Base imponible</td><td class="num"><b>${eur(subtotal)}</b></td></tr>
-    <tr><td>IVA ${ivaPct.toLocaleString('es-ES')}%</td><td class="num"><b>${eur(iva)}</b></td></tr>
-    <tr class="total"><td>TOTAL</td><td class="num">${eur(total)}</td></tr>
-  </table>
+  <div class="tot">
+    <div><span>Base imponible</span><span>${eur(subtotal)}</span></div>
+    <div><span>IVA ${ivaPct.toLocaleString('es-ES')}%</span><span>${eur(iva)}</span></div>
+    <div class="total"><span>TOTAL</span><span>${eur(total)}</span></div>
+  </div>
 
-  <div class="box pago">
-    <p class="lbl">FORMA DE PAGO:</p>
+  <div class="pago">
+    <p class="h">FORMA DE PAGO:</p>
     <p>Transferencia bancaria</p>
-    <p>IBAN: <b>${EMISOR.iban}</b></p>
+    <p>IBAN: ${EMISOR.iban}</p>
     <p>Banco: ${EMISOR.banco}</p>
     <p>Concepto transferencia: ${esc(concepto)}</p>
   </div>
 
   <p class="legal">${LEGAL}</p>
+  <div class="foot">${EMISOR.pie}</div>
+  <div class="pg">Página 1 de 1</div>
 </div>
 <script>window.onload = () => setTimeout(() => window.print(), 300)</script>
 </body></html>`
@@ -267,7 +285,7 @@ function InvoiceForm({ initial, suggestedNumber, onClose, onSaved, notify }: {
           </div>
           {!initial && (
             <p className="font-inter text-[11px] -mt-3" style={{ color: '#B45309' }}>
-              Nº sugerido según las facturas guardadas aquí. Si has emitido otras fuera del admin, ajústalo para mantener la numeración correlativa.
+              Nº sugerido según las facturas guardadas en el admin. Si has emitido otras fuera del admin, ajústalo para mantener la numeración correlativa.
             </p>
           )}
 
@@ -275,9 +293,9 @@ function InvoiceForm({ initial, suggestedNumber, onClose, onSaved, notify }: {
             {L('Cliente (nombre / razón social)', <input className="input w-full" value={client} onChange={e => setClient(e.target.value)} />)}
             {L('NIF / CIF', <input className="input w-full" value={nif} onChange={e => setNif(e.target.value)} />)}
             {L('Dirección', <textarea rows={2} className="input w-full" value={address} onChange={e => setAddress(e.target.value)} />, 'md:col-span-2')}
-            {L('Inmueble / referencia (aparece en el concepto de la transferencia)',
+            {L('Concepto transferencia (tras «Factura nº …» — por defecto, el cliente)',
               <input className="input w-full" value={reference} onChange={e => setRef(e.target.value)}
-                placeholder="Muntaner 477, 8º 2ª" />, 'md:col-span-2')}
+                placeholder={client || 'Albert Gutiérrez'} />, 'md:col-span-2')}
           </div>
 
           <div>
