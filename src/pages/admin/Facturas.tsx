@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import PeriodTrend from './arc/PeriodTrend'
+import { MetricCard, SegmentedControl } from './arc/components'
+import { REVENUE_PERIODS, eur0, eurAxis, isBilled } from './arc/periods'
 import { Plus, X, Loader2, Printer, Pencil, Trash2, ExternalLink } from 'lucide-react'
 
 // ── Datos fijos del emisor (formato nuevo, ver Drive › Facturas › Ingresos) ────────────────────────────────
@@ -53,7 +56,7 @@ const STATUS_COLOR: Record<InvoiceStatus, { bg: string; text: string }> = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const round2 = (n: number) => Math.round(n * 100) / 100
 const eur = (n: number) =>
-  n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+  n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' }) + ' €'
 const ddmmyyyy = (s: string | null) => s ? s.split('-').reverse().join('/') : '—'
 const today = () => new Date().toISOString().slice(0, 10)
 const esc = (s: string) =>
@@ -354,6 +357,7 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState<Invoice | 'new' | null>(null)
   const [filter, setFilter]     = useState<InvoiceStatus | 'todas'>('todas')
+  const [now]                   = useState(() => Date.now())
 
   useEffect(() => {
     supabase.from('invoices').select('*').order('issued_at', { ascending: false })
@@ -379,35 +383,48 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
     if (print) printInvoice(inv)
   }
 
-  const year = String(new Date().getFullYear())
-  const thisYear = invoices.filter(i => i.issued_at.startsWith(year) && i.status !== 'anulada')
-  const facturado = thisYear.reduce((s, i) => s + Number(i.total ?? 0), 0)
-  const pendiente = thisYear.filter(i => i.status === 'enviada' || i.status === 'vencida')
-    .reduce((s, i) => s + Number(i.total ?? 0), 0)
+  const year = String(new Date(now).getFullYear())
+  const thisYear = invoices.filter(i => i.issued_at.startsWith(year) && isBilled(i.status))
+  const sum = (xs: Invoice[]) => xs.reduce((s, i) => s + Number(i.total ?? 0), 0)
+  const facturado = sum(thisYear)
+  const cobrado = sum(thisYear.filter(i => i.status === 'pagada'))
+  const pendientes = thisYear.filter(i => i.status === 'enviada' || i.status === 'vencida')
+  const pendiente = sum(pendientes)
   const filtered = filter === 'todas' ? invoices : invoices.filter(i => i.status === filter)
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="font-jakarta font-bold text-navy text-2xl">Facturas</h1>
-          <p className="font-inter text-sm text-gray-500 mt-1">
-            {year}: {eur(facturado)} facturado · {eur(pendiente)} pendiente de cobro
-          </p>
-        </div>
+        <h1 className="font-jakarta font-bold text-2xl">Facturas</h1>
         <button onClick={() => setModal('new')} className="btn-primary"><Plus size={16} /> Nueva factura</button>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {(['todas', ...STATUSES] as const).map(s => (
-          <button key={s} onClick={() => setFilter(s)}
-            className="px-3 py-1.5 rounded-full font-inter text-xs font-semibold capitalize"
-            style={{
-              background: filter === s ? '#0D1F3C' : 'white',
-              color: filter === s ? 'white' : '#6B7280',
-              border: '1px solid #E2E0DA',
-            }}>{s}</button>
-        ))}
+      {!loading && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+          <div className="arc-glow lg:col-span-3"><div className="arc-card p-5">
+            <PeriodTrend title="Facturación" totalLabel="Facturado (base + IVA)" now={now} cumulative
+              periods={REVENUE_PERIODS} defaultPeriod="90" suffix="€" axisWidth={40} axisFormat={eurAxis}
+              points={invoices.filter(i => isBilled(i.status))
+                .map(i => ({ t: new Date(i.issued_at).getTime(), v: Number(i.total ?? 0) }))}
+              format={eur0} />
+          </div></div>
+          <div className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-1 gap-4 content-start">
+            <MetricCard label={`Facturado ${year}`} value={Math.round(facturado)} suffix="€"
+              context={`${thisYear.length} facturas emitidas`} />
+            <MetricCard label="Cobrado" value={Math.round(cobrado)} suffix="€"
+              context={facturado ? `${Math.round(cobrado / facturado * 100)}% de lo facturado` : undefined} />
+            <MetricCard label="Pendiente de cobro" value={Math.round(pendiente)} suffix="€"
+              context={`${pendientes.length} factura${pendientes.length === 1 ? '' : 's'}`}
+              onClick={() => setFilter('enviada')} />
+          </div>
+        </div>
+      )}
+
+      <div className="mb-4 overflow-x-auto">
+        <SegmentedControl id="inv-filter" value={filter} onChange={setFilter}
+          options={(['todas', ...STATUSES] as const).map(s => ({
+            value: s, label: `${s[0].toUpperCase()}${s.slice(1)}${s === 'todas' ? '' : ` · ${invoices.filter(i => i.status === s).length}`}`,
+          }))} />
       </div>
 
       {loading ? (
@@ -415,7 +432,7 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
       ) : filtered.length === 0 ? (
         <p className="font-inter text-sm text-gray-500 py-12 text-center">No hay facturas.</p>
       ) : (
-        <div className="bg-white rounded-2xl overflow-x-auto" style={{ border: '1px solid #E2E0DA' }}>
+        <div className="arc-card overflow-x-auto">
           <table className="w-full font-inter text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500" style={{ borderBottom: '1px solid #E2E0DA' }}>

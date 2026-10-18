@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { Users, Calendar, Inbox, ArrowUpRight } from 'lucide-react'
+import { Users, Calendar, Inbox, ArrowUpRight, Receipt } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { MetricCard, EmptyState, SegmentedControl, TrendChart, AnimatedCounter } from './arc/components'
+import { MetricCard, EmptyState } from './arc/components'
+import PeriodTrend from './arc/PeriodTrend'
+import { LEAD_PERIODS, REVENUE_PERIODS, eur0, eurAxis, isBilled } from './arc/periods'
 import { ease } from './arc/motion'
 
 type Go = (s: 'pipeline' | 'propiedades' | 'visitas' | 'facturas') => void
 
 interface LeadRow { id: number; nombre: string; tipo: string; estado: string; created_at: string }
 interface VisitaRow { id: number; nombre: string; propiedad_titulo: string; fecha: string; hora: string; estado: string }
-interface InvRow { total: number | null; status: string; issued_at: string }
+interface InvRow { number: string; client_name: string | null; total: number | null; status: string; issued_at: string; due_at: string | null }
 
 const DAY = 86400000
-const eur = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €'
 const TIPO: Record<string, string> = {
   valoracion: 'Valoración', contacto: 'Contacto', interes_propiedad: 'Interés propiedad', visita: 'Visita',
 }
@@ -44,7 +45,7 @@ export default function SectionInicio({ go }: { go: Go }) {
       supabase.from('visitas').select('id,nombre,propiedad_titulo,fecha,hora,estado')
         .gte('fecha', today).in('estado', ['pendiente', 'confirmada']).order('fecha').order('hora'),
       supabase.from('propiedades').select('publicado'),
-      supabase.from('invoices').select('total,status,issued_at'),
+      supabase.from('invoices').select('number,client_name,total,status,issued_at,due_at'),
       supabase.auth.getUser().then(({ data }) => data.user
         ? supabase.from('profiles').select('full_name').eq('id', data.user.id).maybeSingle()
         : null),
@@ -69,10 +70,12 @@ export default function SectionInicio({ go }: { go: Go }) {
 
   const nuevos = leads.filter(l => l.estado === 'nuevo').length
   const year = String(new Date().getFullYear())
-  const vivas = invoices.filter(i => i.issued_at.startsWith(year) && i.status !== 'anulada' && i.status !== 'borrador')
+  const vivas = invoices.filter(i => i.issued_at.startsWith(year) && isBilled(i.status))
   const facturado = vivas.reduce((s, i) => s + Number(i.total ?? 0), 0)
   const pendiente = vivas.filter(i => i.status === 'enviada' || i.status === 'vencida')
     .reduce((s, i) => s + Number(i.total ?? 0), 0)
+  const pendientes = invoices.filter(i => i.status === 'enviada' || i.status === 'vencida')
+    .sort((a, b) => a.issued_at.localeCompare(b.issued_at))
   const publicadas = props.filter(p => p.publicado).length
   const semana = visitas.filter(v => new Date(v.fecha).getTime() < now + 7 * DAY).length
 
@@ -107,14 +110,17 @@ export default function SectionInicio({ go }: { go: Go }) {
         </motion.div>
         <motion.div {...stagger(3)}>
           <MetricCard label={`Facturado ${year}`} value={ready ? Math.round(facturado) : 0} suffix="€"
-            context={`${eur(pendiente)} pendiente de cobro`} onClick={() => go('facturas')} />
+            context={`${eur0(pendiente)} pendiente de cobro`} onClick={() => go('facturas')} />
         </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
-        <motion.section {...stagger(4)} className="arc-card p-5 lg:col-span-3">
-          <LeadsTrend leads={leads} now={now} />
-        </motion.section>
+        <motion.section {...stagger(4)} className="arc-glow lg:col-span-3"><div className="arc-card p-5">
+          <PeriodTrend title="Leads entrantes" totalLabel="Total leads" now={now}
+            periods={LEAD_PERIODS} defaultPeriod="30"
+            points={leads.map(l => ({ t: new Date(l.created_at).getTime(), v: 1 }))}
+            format={v => `${v} lead${v === 1 ? '' : 's'}`} />
+        </div></motion.section>
 
         <motion.section {...stagger(5)} className="arc-card p-2 lg:col-span-2">
           <Header title="Próximas visitas" onMore={() => go('visitas')} />
@@ -138,7 +144,39 @@ export default function SectionInicio({ go }: { go: Go }) {
         </motion.section>
       </div>
 
-      <motion.section {...stagger(6)} className="arc-card p-2 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-4">
+        <motion.section {...stagger(6)} className="arc-glow lg:col-span-3"><div className="arc-card p-5">
+          <PeriodTrend title="Facturación" totalLabel="Facturado (base + IVA)" now={now} cumulative
+            periods={REVENUE_PERIODS} defaultPeriod="90" suffix="€" axisWidth={40} axisFormat={eurAxis}
+            points={invoices.filter(i => isBilled(i.status))
+              .map(i => ({ t: new Date(i.issued_at).getTime(), v: Number(i.total ?? 0) }))}
+            format={eur0} />
+        </div></motion.section>
+
+        <motion.section {...stagger(7)} className="arc-card p-2 lg:col-span-2">
+          <Header title={`Pendiente de cobro · ${eur0(pendiente)}`} onMore={() => go('facturas')} />
+          {ready && pendientes.length === 0
+            ? <EmptyState icon={<Receipt size={18} />} title="Todo cobrado" text="No hay facturas pendientes" />
+            : pendientes.slice(0, 6).map(i => {
+              const vencida = i.status === 'vencida' || (!!i.due_at && new Date(i.due_at).getTime() < now - DAY)
+              return (
+                <button key={i.number} onClick={() => go('facturas')}
+                  className="arc-row w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{i.client_name ?? '—'}</p>
+                    <p className="text-xs tabular" style={{ color: 'var(--text-muted)' }}>
+                      {i.number} · {new Date(i.issued_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                  {vencida && <span className="arc-pill" style={{ background: 'color-mix(in oklch, var(--danger) 11%, transparent)', color: 'var(--danger)' }}>Vencida</span>}
+                  <span className="text-sm font-semibold tabular">{eur0(Number(i.total ?? 0))}</span>
+                </button>
+              )
+            })}
+        </motion.section>
+      </div>
+
+      <motion.section {...stagger(8)} className="arc-card p-2 mt-4">
         <Header title="Últimos leads" onMore={() => go('pipeline')} />
         {ready && leads.length === 0
           ? <EmptyState icon={<Inbox size={18} />} title="Aún no hay leads" />
@@ -172,57 +210,6 @@ function Header({ title, onMore }: { title: string; onMore: () => void }) {
       <button onClick={onMore} className="flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
         Ver todo <ArrowUpRight size={13} />
       </button>
-    </div>
-  )
-}
-
-// ── Tendencia de leads: periodo actual vs anterior ────────────────────────────
-type Period = '7' | '30' | '90'
-const PERIODS: { value: Period; label: string }[] = [
-  { value: '7', label: '7 días' }, { value: '30', label: '30 días' }, { value: '90', label: '90 días' },
-]
-
-function LeadsTrend({ leads, now }: { leads: LeadRow[]; now: number }) {
-  const [period, setPeriod] = useState<Period>('30')
-  const days = Number(period)
-  const bucket = days === 90 ? 3 : 1                 // 90 días → tramos de 3 días
-  const n = days / bucket
-  const end = new Date(new Date(now).toDateString()).getTime() + DAY   // fin de hoy
-  const start = end - days * DAY
-  const cur = Array.from({ length: n }, () => 0)
-  const prev = Array.from({ length: n }, () => 0)
-  for (const l of leads) {
-    const t = new Date(l.created_at).getTime()
-    if (t >= start && t < end) cur[Math.floor((t - start) / (bucket * DAY))]++
-    else if (t >= start - days * DAY && t < start) prev[Math.floor((t - start + days * DAY) / (bucket * DAY))]++
-  }
-  const labels = cur.map((_, i) =>
-    new Date(start + i * bucket * DAY).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))
-  const total = cur.reduce((a, b) => a + b, 0)
-  const prevTotal = prev.reduce((a, b) => a + b, 0)
-  const change = prevTotal ? ((total - prevTotal) / prevTotal) * 100 : null
-  const tone = change == null || change === 0 ? 'var(--text-muted)' : change > 0 ? 'var(--success)' : 'var(--danger)'
-
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <p className="font-jakarta font-semibold text-base">Leads entrantes</p>
-        <SegmentedControl id="leads-period" options={PERIODS} value={period} onChange={setPeriod} />
-      </div>
-      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total leads</p>
-      <AnimatedCounter value={total} className="font-jakarta font-semibold text-[2.4rem] mt-1" />
-      <p className="text-sm mt-1.5 tabular" style={{ color: tone }}>
-        {change == null
-          ? `Sin datos de los ${days} días anteriores`
-          : `${change >= 0 ? '+' : '−'}${Math.abs(change).toLocaleString('es-ES', { maximumFractionDigits: 1 })}% vs ${days} días anteriores`}
-      </p>
-      <div className="flex gap-5 mt-5 mb-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
-        <span className="flex items-center gap-2"><span className="w-3.5 h-[2.5px] rounded" style={{ background: 'var(--accent)' }} />Este periodo</span>
-        <span className="flex items-center gap-2"><span className="w-3.5 h-[2.5px]"
-          style={{ background: 'repeating-linear-gradient(to right, var(--text-muted) 0 4px, transparent 4px 7px)' }} />Periodo anterior</span>
-      </div>
-      <TrendChart current={cur} previous={prev} labels={labels} height={200}
-        format={v => `${v} lead${v === 1 ? '' : 's'}`} />
     </div>
   )
 }

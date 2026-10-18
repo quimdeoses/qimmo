@@ -149,8 +149,9 @@ function niceMax(v: number) {
   return 10 * step
 }
 
-export function TrendChart({ current, previous, labels, height = 220, format = String }: {
+export function TrendChart({ current, previous, labels, height = 220, format = String, axisFormat, axisWidth = 32 }: {
   current: number[]; previous?: number[]; labels: string[]; height?: number; format?: (n: number) => string
+  axisFormat?: (n: number) => string; axisWidth?: number
 }) {
   const W = 600, H = height, top = 8, bottom = 8
   const [active, setActive] = useState<number | null>(null)
@@ -211,15 +212,15 @@ export function TrendChart({ current, previous, labels, height = 220, format = S
             </>
           )}
         </div>
-        <div className="relative w-8 shrink-0 text-[11px] tabular" style={{ height: H, color: 'var(--text-muted)' }}>
+        <div className="relative shrink-0 text-[11px] tabular" style={{ width: axisWidth, height: H, color: 'var(--text-muted)' }}>
           {ticks.map(t => (
             <span key={t} className="absolute right-0 -translate-y-1/2" style={{ top: Y(t) }}>
-              {t.toLocaleString('es-ES', { maximumFractionDigits: 1 })}
+              {axisFormat ? axisFormat(t) : t.toLocaleString('es-ES', { maximumFractionDigits: 1 })}
             </span>
           ))}
         </div>
       </div>
-      <div className="flex justify-between mt-2 pr-10 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+      <div className="flex justify-between mt-2 text-[11px]" style={{ color: 'var(--text-muted)', paddingRight: axisWidth + 8 }}>
         {xTicks.map(i => <span key={i}>{labels[i]}</span>)}
       </div>
     </div>

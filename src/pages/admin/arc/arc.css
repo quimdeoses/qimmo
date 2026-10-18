@@ -72,3 +72,13 @@
 @media (hover: hover) { .arc .arc-row:hover { background: var(--surface-muted); } }
 
 .arc .tabular { font-variant-numeric: tabular-nums; }
+
+/* Halo degradado suave alrededor de las tarjetas destacadas (como Arc) */
+.arc .arc-glow {
+  padding: 5px;
+  border-radius: calc(var(--radius-surface) + 5px);
+  background: linear-gradient(135deg, oklch(96.5% 0.018 265), oklch(97.5% 0.012 200) 50%, oklch(97% 0.025 80));
+}
+.arc .arc-glow > .arc-card { height: 100%; border-color: oklch(100% 0 0 / 0.9); box-shadow: var(--shadow-raised); }
+
+.arc .font-jakarta { letter-spacing: -0.02em; }

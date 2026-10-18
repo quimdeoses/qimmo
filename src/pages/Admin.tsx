@@ -83,7 +83,7 @@ const EMPTY_FORM = {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmt(n: number) { return n.toLocaleString('es-ES') + ' €' }
+function fmt(n: number) { return n.toLocaleString('es-ES', { useGrouping: 'always' }) + ' €' }
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
 }
