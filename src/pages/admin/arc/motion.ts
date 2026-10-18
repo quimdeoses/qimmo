@@ -13,6 +13,8 @@ export const ease = {
 // Entrada de sección: fundido con desenfoque suave
 export const sectionEnter = {
   initial: { opacity: 0, y: 6, filter: 'blur(4px)' },
-  animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+  // Al terminar quitamos filter/transform: si se quedan, los modales `fixed`
+  // de la sección quedan atrapados debajo de la barra inferior del móvil
+  animate: { opacity: 1, y: 0, filter: 'blur(0px)', transitionEnd: { filter: 'none', transform: 'none' } },
   transition: { duration: 0.32, ease: ease.enter },
 }

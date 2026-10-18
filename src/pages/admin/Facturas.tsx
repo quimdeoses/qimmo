@@ -360,7 +360,7 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
   const [now]                   = useState(() => Date.now())
 
   useEffect(() => {
-    supabase.from('invoices').select('*').order('issued_at', { ascending: false })
+    supabase.from('invoices').select('*').eq('accounting', 'A').order('issued_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) notify('Error cargando facturas: ' + error.message, false)
         setInvoices((data ?? []) as Invoice[])
@@ -433,7 +433,7 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
         <p className="font-inter text-sm text-gray-500 py-12 text-center">No hay facturas.</p>
       ) : (
         <div className="arc-card overflow-x-auto">
-          <table className="w-full font-inter text-sm">
+          <table className="hidden md:table w-full font-inter text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500" style={{ borderBottom: '1px solid #E2E0DA' }}>
                 <th className="px-4 py-3">Nº</th><th className="px-4 py-3">Fecha</th>
@@ -472,6 +472,31 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
               })}
             </tbody>
           </table>
+          {/* Móvil: tarjetas táctiles */}
+          <div className="md:hidden">
+            {filtered.map(inv => {
+              const c = STATUS_COLOR[inv.status]
+              return (
+                <div key={inv.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <button onClick={() => setModal(inv)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium truncate">{inv.client_name ?? '—'}</p>
+                    <p className="text-xs tabular" style={{ color: 'var(--text-muted)' }}>{inv.number} · {ddmmyyyy(inv.issued_at)}</p>
+                  </button>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold tabular">{eur(Number(inv.total ?? 0))}</p>
+                    <select value={inv.status} onChange={e => changeStatus(inv, e.target.value as InvoiceStatus)}
+                      className="mt-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold border-0"
+                      style={{ background: c.bg, color: c.text }}>
+                      {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={() => printInvoice(inv)} className="p-2 -mr-2" style={{ color: 'var(--text-muted)' }} title="PDF">
+                    <Printer size={17} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

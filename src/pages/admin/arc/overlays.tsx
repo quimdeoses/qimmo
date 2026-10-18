@@ -16,7 +16,7 @@ export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismi
 
   const visible = toasts.slice(-3)
   return (
-    <div className="fixed z-[200] bottom-6 right-6 w-[min(22rem,calc(100%-2rem))]"
+    <div className="fixed z-[200] bottom-[calc(80px+env(safe-area-inset-bottom))] md:bottom-6 right-4 md:right-6 w-[min(22rem,calc(100%-2rem))]"
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <ul className="relative" style={{ height: 56 }}>
         <AnimatePresence initial={false}>

@@ -8,10 +8,11 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle,
   LogOut, ImagePlus, Loader2, ChevronRight, Users, Home, Calendar,
   Phone, Mail, ArrowLeft, Clock, MapPin, Building2,
-  ChevronDown, ChevronUp, FileText, BookOpen, Receipt, LayoutDashboard, Search, Menu,
+  ChevronDown, ChevronUp, FileText, BookOpen, Receipt, LayoutDashboard, Search, Wallet, MoreHorizontal,
 } from 'lucide-react'
 import SectionFacturas from './admin/Facturas'
 import SectionInicio from './admin/Inicio'
+import SectionFinanzas from './admin/Finanzas'
 import { ToastStack, CommandPalette, type ToastItem, type CommandItem } from './admin/arc/overlays'
 import { spring, sectionEnter } from './admin/arc/motion'
 import { Logo } from './admin/arc/components'
@@ -45,7 +46,7 @@ interface Visita {
   created_at: string
 }
 
-type Section = 'inicio' | 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
+type Section = 'inicio' | 'finanzas' | 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const TIPOS:    TipoProp[]    = ['Piso', 'Àtic', 'Duplex', 'Casa', 'Local', 'Oficina', 'Nave']
@@ -1164,6 +1165,28 @@ export default function Admin() {
       .then(({ count }) => setNewLeadsCount(count ?? 0))
   }, [authed])
 
+  // PWA: «Añadir a pantalla de inicio» abre el CRM como app
+  useEffect(() => {
+    const tags = [
+      ['link', { rel: 'manifest', href: '/admin.webmanifest' }],
+      ['link', { rel: 'apple-touch-icon', href: '/admin-icon-180.png' }],
+      ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
+      ['meta', { name: 'mobile-web-app-capable', content: 'yes' }],
+      ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }],
+      ['meta', { name: 'apple-mobile-web-app-title', content: 'qimmo CRM' }],
+      ['meta', { name: 'theme-color', content: '#FBFBFC' }],
+    ] as const
+    const els = tags.map(([tag, attrs]) => {
+      const el = document.createElement(tag)
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v))
+      document.head.appendChild(el)
+      return el
+    })
+    const prevTitle = document.title
+    document.title = 'qimmo CRM'
+    return () => { els.forEach(e => e.remove()); document.title = prevTitle }
+  }, [])
+
   // ⌘K / Ctrl+K abre la paleta de comandos
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1178,7 +1201,7 @@ export default function Admin() {
     Promise.all([
       supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('propiedades').select('*').order('created_at', { ascending: false }),
-      supabase.from('invoices').select('number,client_name,total').order('issued_at', { ascending: false }),
+      supabase.from('invoices').select('number,client_name,total').eq('accounting', 'A').order('issued_at', { ascending: false }),
     ]).then(([l, p, i]) => setCmdData({
       leads: (l.data ?? []) as Lead[], props: (p.data ?? []) as Propiedad[], invoices: i.data ?? [],
     }))
@@ -1206,9 +1229,13 @@ export default function Admin() {
     { id: 'propiedades' as Section, icon: Home,     label: 'Propiedades',  badge: undefined },
     { id: 'visitas'     as Section, icon: Calendar, label: 'Visitas',      badge: undefined },
     { id: 'facturas'    as Section, icon: Receipt,  label: 'Facturas',     badge: undefined },
+    { id: 'finanzas'    as Section, icon: Wallet,   label: 'Finanzas',     badge: undefined },
     { id: 'mandato'     as Section, icon: FileText, label: 'Mandato',      badge: undefined },
     { id: 'blog'        as Section, icon: BookOpen, label: 'Blog',         badge: undefined },
   ]
+
+  // Pestañas fijas de la barra inferior en móvil; el resto va en «Más»
+  const TABS = NAV.filter(n => ['inicio', 'pipeline', 'visitas', 'facturas'].includes(n.id))
 
   const commands: CommandItem[] = [
     ...NAV.map(n => ({ id: `nav-${n.id}`, group: 'Ir a', label: n.label, icon: <n.icon size={15} />, run: () => goTo(n.id) })),
@@ -1271,36 +1298,70 @@ export default function Admin() {
       </aside>
 
       {/* ── MOBILE TOPBAR ── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3"
-        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center px-4 gap-3"
+        style={{ height: 'calc(56px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)',
+          borderBottom: '1px solid var(--border)', background: 'color-mix(in oklch, var(--surface) 88%, transparent)',
+          backdropFilter: 'saturate(1.6) blur(14px)', WebkitBackdropFilter: 'saturate(1.6) blur(14px)' }}>
         <Logo width={72} />
         <div className="flex-1" />
         <SearchButton compact onClick={() => setCmdOpen(true)} />
-        <button onClick={() => setMobileMenuOpen(v => !v)} className="p-2" style={{ color: 'var(--text-secondary)' }}>
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
       </div>
+
+      {/* ── MOBILE TAB BAR (como app nativa) ── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)', borderTop: '1px solid var(--border)',
+          background: 'color-mix(in oklch, var(--surface) 90%, transparent)',
+          backdropFilter: 'saturate(1.6) blur(14px)', WebkitBackdropFilter: 'saturate(1.6) blur(14px)' }}>
+        {[...TABS, { id: 'more' as const, icon: MoreHorizontal, label: 'Más', badge: undefined }].map(t => {
+          const active = t.id === 'more' ? mobileMenuOpen : (!mobileMenuOpen && activeSection === t.id)
+          return (
+            <motion.button key={t.id} whileTap={{ scale: 0.9 }} transition={spring.snappy}
+              onClick={() => t.id === 'more' ? setMobileMenuOpen(v => !v) : goTo(t.id)}
+              className="relative flex-1 flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[10px] font-medium"
+              style={{ color: active ? 'var(--accent)' : 'var(--text-muted)' }}>
+              <span className="relative">
+                <t.icon size={21} strokeWidth={active ? 2.2 : 1.8} />
+                {t.badge != null && t.badge > 0 && (
+                  <span className="absolute -top-1 -right-2.5 min-w-4 h-4 px-1 rounded-full grid place-items-center text-[9px] font-bold text-white"
+                    style={{ background: 'var(--gold)' }}>{t.badge}</span>
+                )}
+              </span>
+              {t.label}
+            </motion.button>
+          )
+        })}
+      </nav>
+
+      {/* Hoja «Más» */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div className="md:hidden fixed top-14 left-0 right-0 z-40 px-3 py-3 space-y-0.5"
-            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            transition={spring.gentle}
-            style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-muted)', boxShadow: 'var(--shadow-raised)' }}>
-            {NAV.map(n => (
-              <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge} layoutGroup="mobile"
-                active={activeSection === n.id} onClick={() => goTo(n.id)} />
-            ))}
-            <button onClick={logout} className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm w-full mt-2"
-              style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border)' }}>
-              <LogOut size={15} /> Cerrar sesión
-            </button>
+          <motion.div className="md:hidden fixed inset-0 z-30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ background: 'color-mix(in oklch, #0D1F3C 25%, transparent)' }} onClick={() => setMobileMenuOpen(false)}>
+            <motion.div className="absolute left-2 right-2 p-2 space-y-0.5 rounded-[var(--radius-surface)]"
+              style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: 'var(--shadow-floating)' }}
+              initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }} transition={spring.gentle}
+              onClick={e => e.stopPropagation()}>
+              {NAV.filter(n => !TABS.some(t => t.id === n.id)).map(n => (
+                <NavItem key={n.id} icon={n.icon} label={n.label} badge={n.badge} layoutGroup="mobile"
+                  active={activeSection === n.id} onClick={() => goTo(n.id)} />
+              ))}
+              <div className="pt-1 mt-1" style={{ borderTop: '1px solid var(--border)' }}>
+                <a href="/" target="_blank" className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm" style={{ color: 'var(--text-muted)' }}>
+                  <MapPin size={16} /> Ver web
+                </a>
+                <button onClick={logout} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm w-full" style={{ color: 'var(--text-muted)' }}>
+                  <LogOut size={16} /> Cerrar sesión
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 min-w-0 mt-14 md:mt-0">
-        <motion.div key={section} {...sectionEnter} className="px-5 lg:px-8 py-8">
+      <main className="flex-1 min-w-0 md:!pt-0 md:!pb-0"
+        style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}>
+        <motion.div key={section} {...sectionEnter} className="px-4 sm:px-5 lg:px-8 py-6 md:py-8">
           {section === 'inicio' && <SectionInicio go={goTo} />}
           {section === 'pipeline' && <SectionPipeline notify={notify} />}
           {section === 'propiedades' && <SectionPropiedades notify={notify} onSelectProp={handleSelectProp} />}
@@ -1315,6 +1376,7 @@ export default function Admin() {
           )}
           {section === 'blog' && <SectionBlog notify={notify} />}
           {section === 'facturas' && <SectionFacturas notify={notify} />}
+          {section === 'finanzas' && <SectionFinanzas notify={notify} />}
         </motion.div>
       </main>
     </div>

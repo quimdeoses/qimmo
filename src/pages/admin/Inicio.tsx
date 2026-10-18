@@ -45,7 +45,7 @@ export default function SectionInicio({ go }: { go: Go }) {
       supabase.from('visitas').select('id,nombre,propiedad_titulo,fecha,hora,estado')
         .gte('fecha', today).in('estado', ['pendiente', 'confirmada']).order('fecha').order('hora'),
       supabase.from('propiedades').select('publicado'),
-      supabase.from('invoices').select('number,client_name,total,status,issued_at,due_at'),
+      supabase.from('invoices').select('number,client_name,total,status,issued_at,due_at').eq('accounting', 'A'),
       supabase.auth.getUser().then(({ data }) => data.user
         ? supabase.from('profiles').select('full_name').eq('id', data.user.id).maybeSingle()
         : null),
