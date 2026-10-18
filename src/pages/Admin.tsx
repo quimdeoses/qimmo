@@ -7,8 +7,9 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle, AlertCircle,
   LogOut, ImagePlus, Loader2, ChevronRight, Users, Home, Calendar,
   Phone, Mail, MessageSquare, ArrowLeft, Clock, MapPin, Building2,
-  ChevronDown, ChevronUp, Star, FileText, BookOpen,
+  ChevronDown, ChevronUp, Star, FileText, BookOpen, Receipt,
 } from 'lucide-react'
+import SectionFacturas from './admin/Facturas'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Lead {
@@ -38,12 +39,9 @@ interface Visita {
   created_at: string
 }
 
-type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog'
+type Section = 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'qimmo2025'
-const SESSION_KEY    = 'qimmo_admin_auth'
-
 const TIPOS:    TipoProp[]    = ['Piso', 'Àtic', 'Duplex', 'Casa', 'Local', 'Oficina', 'Nave']
 const ZONAS:    ZonaProp[]    = ['Barcelona', 'Zona Alta', 'Área Metropolitana', 'Costa Daurada', 'Vallès']
 const ENERGIAS: EnergiaCert[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
@@ -101,13 +99,17 @@ function Toast({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => 
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────────
-function Login({ onLogin }: { onLogin: () => void }) {
-  const [pwd, setPwd] = useState('')
-  const [err, setErr] = useState(false)
-  const submit = (e: React.FormEvent) => {
+function Login() {
+  const [email, setEmail]     = useState('')
+  const [pwd, setPwd]         = useState('')
+  const [err, setErr]         = useState('')
+  const [loading, setLoading] = useState(false)
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (pwd === ADMIN_PASSWORD) { sessionStorage.setItem(SESSION_KEY, '1'); onLogin() }
-    else { setErr(true); setPwd('') }
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pwd })
+    setLoading(false)
+    if (error) { setErr('Email o contraseña incorrectos'); setPwd('') }
   }
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D1F3C' }}>
@@ -115,10 +117,14 @@ function Login({ onLogin }: { onLogin: () => void }) {
         <img src="/LOGO QIMMO BLUE.png" alt="qimmo" className="h-12 w-auto mb-8 mx-auto" />
         <h1 className="font-jakarta font-bold text-navy text-xl text-center mb-6">Admin · qimmo</h1>
         <form onSubmit={submit} className="space-y-4">
-          <input type="password" placeholder="Contraseña" value={pwd} autoFocus
-            onChange={e => { setPwd(e.target.value); setErr(false) }} className="input w-full" />
-          {err && <p className="font-inter text-xs text-red-500">Contraseña incorrecta</p>}
-          <button type="submit" className="btn-primary w-full justify-center">Entrar</button>
+          <input type="email" placeholder="Email" value={email} autoFocus autoComplete="username"
+            onChange={e => { setEmail(e.target.value); setErr('') }} className="input w-full" />
+          <input type="password" placeholder="Contraseña" value={pwd} autoComplete="current-password"
+            onChange={e => { setPwd(e.target.value); setErr('') }} className="input w-full" />
+          {err && <p className="font-inter text-xs text-red-500">{err}</p>}
+          <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
+            {loading ? <Loader2 size={15} className="animate-spin" /> : 'Entrar'}
+          </button>
         </form>
       </div>
     </div>
@@ -1140,7 +1146,7 @@ function SectionMandato() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
-  const [authed, setAuthed]       = useState(() => sessionStorage.getItem(SESSION_KEY) === '1')
+  const [authed, setAuthed]       = useState<boolean | null>(null)
   const [section, setSection]     = useState<Section>('pipeline')
   const [selectedProp, setSelectedProp] = useState<Propiedad | null>(null)
   const [toast, setToast]         = useState<{ msg: string; ok: boolean } | null>(null)
@@ -1150,14 +1156,21 @@ export default function Admin() {
   const notify = (msg: string, ok = true) => setToast({ msg, ok })
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session))
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setAuthed(!!session))
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
     if (!authed || !supabaseReady) return
     supabase.from('leads').select('id', { count: 'exact' }).eq('estado', 'nuevo')
       .then(({ count }) => setNewLeadsCount(count ?? 0))
   }, [authed])
 
-  if (!authed) return <Login onLogin={() => setAuthed(true)} />
+  if (authed === null) return null
+  if (!authed) return <Login />
 
-  const logout = () => { sessionStorage.removeItem(SESSION_KEY); setAuthed(false) }
+  const logout = () => { supabase.auth.signOut() }
 
   const goTo = (s: Section) => {
     setSection(s)
@@ -1174,6 +1187,7 @@ export default function Admin() {
     { id: 'pipeline'    as Section, icon: Users,    label: 'Pipeline',     badge: newLeadsCount },
     { id: 'propiedades' as Section, icon: Home,     label: 'Propiedades',  badge: undefined },
     { id: 'visitas'     as Section, icon: Calendar, label: 'Visitas',      badge: undefined },
+    { id: 'facturas'    as Section, icon: Receipt,  label: 'Facturas',     badge: undefined },
     { id: 'mandato'     as Section, icon: FileText, label: 'Mandato',      badge: undefined },
     { id: 'blog'        as Section, icon: BookOpen, label: 'Blog',         badge: undefined },
   ]
@@ -1264,6 +1278,7 @@ export default function Admin() {
             </div>
           )}
           {section === 'blog' && <SectionBlog notify={notify} />}
+          {section === 'facturas' && <SectionFacturas notify={notify} />}
         </div>
       </main>
     </div>
