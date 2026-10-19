@@ -7,44 +7,19 @@ import {
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, X, CheckCircle,
   LogOut, ImagePlus, Loader2, ChevronRight, Users, Home, Calendar,
-  Phone, Mail, ArrowLeft, Clock, MapPin, Building2,
-  ChevronDown, ChevronUp, FileText, BookOpen, Receipt, LayoutDashboard, Search, Wallet, MoreHorizontal,
+  ArrowLeft, MapPin,
+  FileText, BookOpen, Receipt, LayoutDashboard, Search, Wallet, MoreHorizontal,
 } from 'lucide-react'
 import SectionFacturas from './admin/Facturas'
 import SectionInicio from './admin/Inicio'
 import SectionFinanzas from './admin/Finanzas'
+import SectionPipeline, { LeadRow, LeadSheet } from './admin/Pipeline'
+import SectionVisitas from './admin/Visitas'
+import { type Lead } from './admin/crm'
 import { ToastStack, CommandPalette, type ToastItem, type CommandItem } from './admin/arc/overlays'
 import { spring, sectionEnter } from './admin/arc/motion'
-import { Logo } from './admin/arc/components'
+import { Logo, SegmentedControl } from './admin/arc/components'
 import './admin/arc/arc.css'
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface Lead {
-  id: number
-  nombre: string
-  telefono: string
-  email: string
-  tipo: 'valoracion' | 'contacto' | 'interes_propiedad' | 'visita'
-  mensaje: string | null
-  propiedad_ref: string | null
-  estado: 'nuevo' | 'contactado' | 'en_proceso' | 'cerrado' | 'descartado'
-  notas: string | null
-  created_at: string
-}
-
-interface Visita {
-  id: number
-  propiedad_ref: string
-  propiedad_titulo: string
-  nombre: string
-  telefono: string
-  email: string
-  fecha: string
-  hora: string
-  estado: 'pendiente' | 'confirmada' | 'realizada' | 'cancelada'
-  notas: string | null
-  created_at: string
-}
 
 type Section = 'inicio' | 'finanzas' | 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
 
@@ -53,27 +28,6 @@ const TIPOS:    TipoProp[]    = ['Piso', 'Àtic', 'Duplex', 'Casa', 'Local', 'Of
 const ZONAS:    ZonaProp[]    = ['Barcelona', 'Zona Alta', 'Área Metropolitana', 'Costa Daurada', 'Vallès']
 const ENERGIAS: EnergiaCert[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 const BADGES:   (BadgeProp | '')[] = ['', 'Nueva incorporación', 'Off-market', 'Inversión', 'Precio reducido']
-
-const LEAD_ESTADOS: Lead['estado'][]   = ['nuevo', 'contactado', 'en_proceso', 'cerrado', 'descartado']
-const VISITA_ESTADOS: Visita['estado'][] = ['pendiente', 'confirmada', 'realizada', 'cancelada']
-
-const ESTADO_LABEL: Record<string, string> = {
-  nuevo: 'Nuevo', contactado: 'Contactado', en_proceso: 'En proceso',
-  cerrado: 'Cerrado', descartado: 'Descartado',
-  pendiente: 'Pendiente', confirmada: 'Confirmada', realizada: 'Realizada', cancelada: 'Cancelada',
-}
-
-const ESTADO_COLOR: Record<string, { bg: string; text: string }> = {
-  nuevo:       { bg: '#EFF6FF', text: '#2563EB' },
-  contactado:  { bg: '#F0FDF4', text: '#16A34A' },
-  en_proceso:  { bg: '#FEF9EE', text: '#D97706' },
-  cerrado:     { bg: '#F3F4F6', text: '#6B7280' },
-  descartado:  { bg: '#FEF2F2', text: '#DC2626' },
-  pendiente:   { bg: '#FEF9EE', text: '#D97706' },
-  confirmada:  { bg: '#F0FDF4', text: '#16A34A' },
-  realizada:   { bg: '#F3F4F6', text: '#6B7280' },
-  cancelada:   { bg: '#FEF2F2', text: '#DC2626' },
-}
 
 const EMPTY_FORM = {
   ref: '', titulo: '', tipo: 'Piso' as TipoProp, zona: 'Barcelona' as ZonaProp,
@@ -85,9 +39,6 @@ const EMPTY_FORM = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(n: number) { return n.toLocaleString('es-ES', { useGrouping: 'always' }) + ' €' }
-function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 function Login() {
@@ -312,186 +263,6 @@ function PropForm({ initial, onSave, onCancel }: {
   )
 }
 
-// ── Lead card ─────────────────────────────────────────────────────────────────
-function LeadCard({ lead, onUpdate }: { lead: Lead; onUpdate: (id: number, changes: Partial<Lead>) => void }) {
-  const [expanded, setExpanded] = useState(false)
-  const [estado, setEstado]     = useState<Lead['estado']>(lead.estado)
-  const [notas, setNotas]       = useState(lead.notas ?? '')
-  const [saving, setSaving]     = useState(false)
-
-  const saveNotas = async () => {
-    setSaving(true)
-    await supabase.from('leads').update({ notas, estado }).eq('id', lead.id)
-    onUpdate(lead.id, { notas, estado })
-    setSaving(false)
-  }
-
-  const changeEstado = async (e: Lead['estado']) => {
-    setEstado(e)
-    await supabase.from('leads').update({ estado: e }).eq('id', lead.id)
-    onUpdate(lead.id, { estado: e })
-  }
-
-  const col = ESTADO_COLOR[estado] ?? ESTADO_COLOR.nuevo
-  const tipoLabel: Record<string, string> = {
-    valoracion: 'Valoración', contacto: 'Contacto',
-    interes_propiedad: 'Interés propiedad', visita: 'Visita',
-  }
-
-  return (
-    <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #E2E0DA' }}>
-      <div className="px-4 py-3 flex items-center gap-3 cursor-pointer" onClick={() => setExpanded(v => !v)}>
-        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-jakarta font-bold text-sm text-white"
-          style={{ background: '#0D1F3C' }}>
-          {lead.nombre[0]?.toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-jakarta font-bold text-navy text-sm">{lead.nombre}</p>
-          <p className="font-inter text-xs truncate" style={{ color: '#9CA3AF' }}>
-            {tipoLabel[lead.tipo] ?? lead.tipo} · {fmtDate(lead.created_at)}
-          </p>
-        </div>
-        <span className="px-2 py-0.5 rounded-full font-inter text-[10px] font-semibold shrink-0"
-          style={{ background: col.bg, color: col.text }}>
-          {ESTADO_LABEL[estado]}
-        </span>
-        {expanded ? <ChevronUp size={14} style={{ color: '#9CA3AF' }} /> : <ChevronDown size={14} style={{ color: '#9CA3AF' }} />}
-      </div>
-
-      {expanded && (
-        <div className="px-4 pb-4 space-y-3" style={{ borderTop: '1px solid #F0EDE8' }}>
-          <div className="flex flex-wrap gap-3 pt-3">
-            {lead.telefono && (
-              <a href={`tel:${lead.telefono}`} className="flex items-center gap-1.5 font-inter text-xs" style={{ color: '#0D1F3C' }}>
-                <Phone size={12} /> {lead.telefono}
-              </a>
-            )}
-            {lead.email && (
-              <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 font-inter text-xs" style={{ color: '#0D1F3C' }}>
-                <Mail size={12} /> {lead.email}
-              </a>
-            )}
-            {lead.propiedad_ref && (
-              <span className="flex items-center gap-1.5 font-inter text-xs" style={{ color: '#C49A3C' }}>
-                <Building2 size={12} /> Ref: {lead.propiedad_ref}
-              </span>
-            )}
-          </div>
-          {lead.mensaje && (
-            <div className="rounded-lg p-3" style={{ background: '#F7F6F2' }}>
-              <p className="font-inter text-xs leading-relaxed" style={{ color: '#4B5563' }}>{lead.mensaje}</p>
-            </div>
-          )}
-          <div>
-            <label className="font-inter text-[10px] font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: '#9CA3AF' }}>Estado</label>
-            <div className="flex flex-wrap gap-1.5">
-              {LEAD_ESTADOS.map(e => {
-                const c = ESTADO_COLOR[e]
-                return (
-                  <button key={e} onClick={() => changeEstado(e)}
-                    className="px-2.5 py-1 rounded-full font-inter text-[10px] font-semibold border transition-all"
-                    style={{
-                      background: estado === e ? c.bg : 'transparent',
-                      color: estado === e ? c.text : '#9CA3AF',
-                      borderColor: estado === e ? c.text : '#E2E0DA',
-                    }}>
-                    {ESTADO_LABEL[e]}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <div>
-            <label className="font-inter text-[10px] font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: '#9CA3AF' }}>Notas internas</label>
-            <textarea className="input w-full resize-none text-xs" rows={2} placeholder="Añade notas…"
-              value={notas} onChange={e => setNotas(e.target.value)} />
-            <button onClick={saveNotas} disabled={saving}
-              className="mt-1.5 flex items-center gap-1 font-inter text-xs font-semibold"
-              style={{ color: '#C49A3C' }}>
-              {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
-              Guardar notas
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── SECTION: Pipeline ─────────────────────────────────────────────────────────
-function SectionPipeline({ notify }: { notify: (m: string, ok?: boolean) => void }) {
-  const [leads, setLeads]         = useState<Lead[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [filter, setFilter]       = useState<Lead['estado'] | 'todos'>('todos')
-
-  useEffect(() => {
-    if (!supabaseReady) { setLoading(false); return }
-    supabase.from('leads').select('*').order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        setLoading(false)
-        if (error) { notify(error.message, false); return }
-        setLeads((data ?? []) as Lead[])
-      })
-  }, [])
-
-  const update = (id: number, changes: Partial<Lead>) =>
-    setLeads(ls => ls.map(l => l.id === id ? { ...l, ...changes } : l))
-
-  const filtered = filter === 'todos' ? leads : leads.filter(l => l.estado === filter)
-
-  const counts = LEAD_ESTADOS.reduce((acc, e) => {
-    acc[e] = leads.filter(l => l.estado === e).length
-    return acc
-  }, {} as Record<string, number>)
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-jakarta font-bold text-navy text-2xl">Pipeline</h1>
-          <p className="font-inter text-sm mt-1" style={{ color: '#9CA3AF' }}>{leads.length} leads totales</p>
-        </div>
-      </div>
-
-      {/* Status tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {(['todos', ...LEAD_ESTADOS] as const).map(e => {
-          const col = e === 'todos' ? { bg: '#F0F4FA', text: '#0D1F3C' } : ESTADO_COLOR[e]
-          const count = e === 'todos' ? leads.length : counts[e] ?? 0
-          const active = filter === e
-          return (
-            <button key={e} onClick={() => setFilter(e)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-inter text-xs font-semibold border transition-all"
-              style={{
-                background: active ? col.bg : 'transparent',
-                color: active ? col.text : '#9CA3AF',
-                borderColor: active ? col.text + '40' : '#E2E0DA',
-              }}>
-              {e === 'todos' ? 'Todos' : ESTADO_LABEL[e]}
-              <span className="px-1.5 py-0.5 rounded-full text-[10px]"
-                style={{ background: active ? col.text + '20' : '#F0F0F0', color: active ? col.text : '#9CA3AF' }}>
-                {count}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin" style={{ color: '#C49A3C' }} /></div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="font-jakarta font-bold text-navy mb-2">Sin leads {filter !== 'todos' ? `"${ESTADO_LABEL[filter]}"` : ''}</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map(l => <LeadCard key={l.id} lead={l} onUpdate={update} />)}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── SECTION: Propiedades list ─────────────────────────────────────────────────
 function SectionPropiedades({
   notify, onSelectProp,
@@ -518,80 +289,80 @@ function SectionPropiedades({
     notify(p.publicado ? 'Despublicada' : 'Publicada')
   }
 
-  const eliminar = async (p: Propiedad) => {
-    if (!confirm(`¿Eliminar "${p.titulo}"? Esta acción no se puede deshacer.`)) return
-    const { error } = await supabase.from('propiedades').delete().eq('id', p.id)
-    if (error) { notify(error.message, false); return }
-    setProps(ps => ps.filter(x => x.id !== p.id))
-    notify('Propiedad eliminada')
-  }
+  const [filter, setFilter] = useState<'todas' | 'publicadas' | 'borradores'>('todas')
+  const [q, setQ] = useState('')
+  const needle = q.trim().toLowerCase()
+  const shown = props.filter(p =>
+    (filter === 'todas' || (filter === 'publicadas') === p.publicado) &&
+    (!needle || `${p.ref} ${p.titulo} ${p.barrio} ${p.direccion}`.toLowerCase().includes(needle)))
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-6xl">
+      <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="font-jakarta font-bold text-navy text-2xl">Propiedades</h1>
-          <p className="font-inter text-sm mt-1" style={{ color: '#9CA3AF' }}>
+          <h1 className="font-jakarta font-bold text-2xl">Propiedades</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {props.filter(p => p.publicado).length} publicadas · {props.filter(p => !p.publicado).length} borradores
           </p>
         </div>
-        <button onClick={() => setModal('new')} className="btn-primary gap-2">
-          <Plus size={15} /> Nueva propiedad
-        </button>
+        <button onClick={() => setModal('new')} className="btn-primary"><Plus size={16} /><span className="hidden sm:inline">Nueva propiedad</span></button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <SegmentedControl id="prop-filter" value={filter} onChange={setFilter} options={[
+          { value: 'todas', label: `Todas · ${props.length}` },
+          { value: 'publicadas', label: 'Publicadas' },
+          { value: 'borradores', label: 'Borradores' },
+        ]} />
+        <label className="flex items-center gap-2 px-3 h-10 rounded-[var(--radius-control)] sm:ml-auto sm:w-64"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <Search size={15} style={{ color: 'var(--text-muted)' }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Ref, título, barrio…"
+            className="flex-1 min-w-0 bg-transparent outline-none text-sm" />
+        </label>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin" style={{ color: '#C49A3C' }} /></div>
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin" style={{ color: 'var(--text-muted)' }} /></div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {props.map(p => (
-            <div key={p.id} className="bg-white rounded-2xl overflow-hidden cursor-pointer group transition-shadow hover:shadow-md"
-              style={{ border: '1px solid #E2E0DA' }}
-              onClick={() => onSelectProp(p)}>
-              <div className="relative h-40 overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {shown.map(p => (
+            <motion.div key={p.id} layout transition={spring.gentle} whileTap={{ scale: 0.99 }}
+              className="arc-card overflow-hidden cursor-pointer group" onClick={() => onSelectProp(p)}>
+              <div className="relative aspect-[16/10] overflow-hidden" style={{ background: 'var(--surface-muted)' }}>
                 {p.imagen
-                  ? <img src={p.imagen} alt={p.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  : <div className="w-full h-full flex items-center justify-center" style={{ background: '#F0F4FA' }}>
-                      <Home size={32} style={{ color: '#C4C0B8' }} />
-                    </div>}
-                <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
-                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md"
-                    style={{ background: 'rgba(0,0,0,0.6)', color: '#C49A3C' }}>{p.ref}</span>
-                  <button onClick={e => { e.stopPropagation(); togglePublicado(p) }}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-full font-inter text-[10px] font-semibold"
-                    style={{ background: p.publicado ? '#ECFDF5' : 'rgba(0,0,0,0.5)', color: p.publicado ? '#059669' : 'white' }}>
-                    {p.publicado ? <Eye size={10} /> : <EyeOff size={10} />}
-                    {p.publicado ? 'Publicada' : 'Borrador'}
+                  ? <img src={p.imagen} alt={p.titulo} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+                  : <div className="w-full h-full grid place-items-center"><Home size={30} style={{ color: 'var(--border-strong)' }} /></div>}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-start">
+                  <span className="arc-pill" style={{ background: 'rgb(255 255 255 / .9)', color: 'var(--accent)', backdropFilter: 'blur(6px)' }}>{p.ref}</span>
+                  <button onClick={e => { e.stopPropagation(); togglePublicado(p) }} className="arc-pill"
+                    style={p.publicado
+                      ? { background: 'color-mix(in oklch, var(--success) 90%, white)', color: 'white' }
+                      : { background: 'rgb(0 0 0 / .55)', color: 'white', backdropFilter: 'blur(6px)' }}>
+                    {p.publicado ? <Eye size={10} /> : <EyeOff size={10} />}{p.publicado ? 'Publicada' : 'Borrador'}
                   </button>
                 </div>
               </div>
               <div className="p-4">
-                <p className="font-inter text-xs mb-1" style={{ color: '#9CA3AF' }}>{p.barrio} · {p.tipo}</p>
-                <p className="font-jakarta font-bold text-navy mb-2 line-clamp-1">{p.titulo}</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-jakarta font-bold text-navy">{fmt(p.precio)}</span>
-                  <div className="flex gap-1">
-                    <button onClick={e => { e.stopPropagation(); eliminar(p) }}
-                      className="p-1.5 rounded-lg transition-colors"
-                      style={{ color: '#9CA3AF' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF' }}>
-                      <Trash2 size={13} />
-                    </button>
-                    <ChevronRight size={16} style={{ color: '#9CA3AF', marginTop: 4 }} />
-                  </div>
+                <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>{p.barrio || p.zona} · {p.tipo}</p>
+                <p className="font-jakarta font-semibold line-clamp-1">{p.titulo}</p>
+                <div className="flex items-center justify-between mt-2.5">
+                  <span className="font-jakarta font-bold tabular">{fmt(p.precio)}</span>
+                  <span className="text-xs tabular" style={{ color: 'var(--text-muted)' }}>
+                    {[p.m2 && `${p.m2} m²`, p.habitaciones && `${p.habitaciones} hab.`].filter(Boolean).join(' · ')}
+                  </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
 
       {/* New property modal */}
       {modal === 'new' && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center py-8 px-4 overflow-y-auto"
-          style={{ background: 'rgba(13,31,60,0.6)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-auto">
+        <div className="fixed inset-0 z-[120] flex items-start justify-center py-8 px-4 overflow-y-auto"
+          style={{ background: 'color-mix(in oklch, #0D1F3C 35%, transparent)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-2xl my-auto rounded-[var(--radius-surface)]" style={{ background: 'var(--surface)', boxShadow: 'var(--shadow-floating)' }}>
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #E2E0DA' }}>
               <h2 className="font-jakarta font-bold text-navy text-lg">Nueva propiedad</h2>
               <button onClick={() => setModal(null)} style={{ color: '#6B7280' }}><X size={18} /></button>
@@ -611,6 +382,14 @@ function SectionPropDetail({ prop, onBack, notify }: {
   prop: Propiedad; onBack: () => void; notify: (m: string, ok?: boolean) => void
 }) {
   const [current, setCurrent] = useState<Propiedad>(prop)
+  const [openLead, setOpenLead] = useState<number | null>(null)
+  const eliminar = async () => {
+    if (!confirm(`¿Eliminar "${current.titulo}"? Esta acción no se puede deshacer.`)) return
+    const { error } = await supabase.from('propiedades').delete().eq('id', current.id)
+    if (error) { notify(error.message, false); return }
+    notify('Propiedad eliminada')
+    onBack()
+  }
   const [leads, setLeads]     = useState<Lead[]>([])
   const [editing, setEditing] = useState(false)
   const [tab, setTab]         = useState<'info' | 'leads'>('info')
@@ -627,17 +406,19 @@ function SectionPropDetail({ prop, onBack, notify }: {
   return (
     <div>
       {/* Back + header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="flex items-center gap-1.5 font-inter text-sm" style={{ color: '#6B7280' }}>
+      <div className="flex items-center gap-2 mb-5">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
           <ArrowLeft size={15} /> Propiedades
         </button>
-        <ChevronRight size={14} style={{ color: '#C4C0B8' }} />
-        <span className="font-mono text-sm font-semibold" style={{ color: '#C49A3C' }}>{current.ref}</span>
+        <ChevronRight size={14} style={{ color: 'var(--border-strong)' }} />
+        <span className="text-sm font-semibold" style={{ color: 'var(--gold)' }}>{current.ref}</span>
+        <div className="flex-1" />
+        <button onClick={eliminar} className="p-2 rounded-lg" title="Eliminar propiedad" style={{ color: 'var(--text-muted)' }}><Trash2 size={15} /></button>
       </div>
 
       {/* Hero */}
-      <div className="bg-white rounded-2xl overflow-hidden mb-6" style={{ border: '1px solid #E2E0DA' }}>
-        <div className="relative h-52 overflow-hidden">
+      <div className="arc-card overflow-hidden mb-5">
+        <div className="relative h-56 sm:h-72 overflow-hidden">
           {current.imagen
             ? <img src={current.imagen} alt={current.titulo} className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center" style={{ background: '#F0F4FA' }}><Home size={40} style={{ color: '#C4C0B8' }} /></div>}
@@ -650,8 +431,8 @@ function SectionPropDetail({ prop, onBack, notify }: {
             <span className="font-jakarta font-bold text-2xl" style={{ color: '#C49A3C' }}>{fmt(current.precio)}</span>
           </div>
         </div>
-        <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: '1px solid #E2E0DA' }}>
-          <div className="flex gap-4 font-inter text-sm" style={{ color: '#6B7280' }}>
+        <div className="px-5 py-3 flex flex-wrap gap-3 items-center justify-between" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
             {current.m2 && <span>{current.m2} m²</span>}
             {current.habitaciones && <span>{current.habitaciones} hab.</span>}
             {current.banos && <span>{current.banos} baños</span>}
@@ -685,22 +466,13 @@ function SectionPropDetail({ prop, onBack, notify }: {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 p-1 rounded-xl" style={{ background: '#F0F4FA' }}>
-        {(['info', 'leads'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className="flex-1 py-2 rounded-lg font-inter text-sm font-semibold transition-all"
-            style={{
-              background: tab === t ? 'white' : 'transparent',
-              color: tab === t ? '#0D1F3C' : '#9CA3AF',
-              boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-            }}>
-            {t === 'info' ? 'Información' : `Leads (${leads.length})`}
-          </button>
-        ))}
+      <div className="mb-5">
+        <SegmentedControl id="prop-tab" value={tab} onChange={setTab}
+          options={[{ value: 'info', label: 'Información' }, { value: 'leads', label: `Leads · ${leads.length}` }]} />
       </div>
 
       {tab === 'info' && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {[
             { label: 'Dirección', val: current.direccion || '—' },
             { label: 'Zona', val: current.zona },
@@ -709,19 +481,19 @@ function SectionPropDetail({ prop, onBack, notify }: {
             { label: 'Planta', val: current.planta ?? '—' },
             { label: 'Referencia', val: current.ref },
           ].map(({ label, val }) => (
-            <div key={label} className="card">
+            <div key={label} className="arc-card !rounded-2xl p-4">
               <p className="font-inter text-[10px] uppercase tracking-widest mb-1" style={{ color: '#9CA3AF' }}>{label}</p>
               <p className="font-jakarta font-bold text-navy text-sm">{val}</p>
             </div>
           ))}
           {current.descripcion && (
-            <div className="card col-span-2">
+            <div className="arc-card !rounded-2xl p-4 col-span-2 lg:col-span-3">
               <p className="font-inter text-[10px] uppercase tracking-widest mb-2" style={{ color: '#9CA3AF' }}>Descripción</p>
               <p className="font-inter text-sm leading-relaxed" style={{ color: '#4B5563' }}>{current.descripcion}</p>
             </div>
           )}
           {current.caracteristicas?.length > 0 && (
-            <div className="card col-span-2">
+            <div className="arc-card !rounded-2xl p-4 col-span-2 lg:col-span-3">
               <p className="font-inter text-[10px] uppercase tracking-widest mb-2" style={{ color: '#9CA3AF' }}>Características</p>
               <ul className="space-y-1">
                 {current.caracteristicas.map((c, i) => (
@@ -739,14 +511,16 @@ function SectionPropDetail({ prop, onBack, notify }: {
       {tab === 'leads' && (
         leads.length === 0
           ? <div className="text-center py-12"><p className="font-inter text-sm" style={{ color: '#9CA3AF' }}>Sin leads para esta propiedad</p></div>
-          : <div className="space-y-2">{leads.map(l => <LeadCard key={l.id} lead={l} onUpdate={updateLead} />)}</div>
+          : <div className="arc-card p-2">{leads.map(l => <LeadRow key={l.id} lead={l} onOpen={() => setOpenLead(l.id)} />)}</div>
       )}
+      <LeadSheet key={openLead ?? 'none'} lead={leads.find(l => l.id === openLead) ?? null}
+        onClose={() => setOpenLead(null)} onUpdate={updateLead} notify={notify} />
 
       {/* Edit modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center py-8 px-4 overflow-y-auto"
-          style={{ background: 'rgba(13,31,60,0.6)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-auto">
+        <div className="fixed inset-0 z-[120] flex items-start justify-center py-8 px-4 overflow-y-auto"
+          style={{ background: 'color-mix(in oklch, #0D1F3C 35%, transparent)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-2xl my-auto rounded-[var(--radius-surface)]" style={{ background: 'var(--surface)', boxShadow: 'var(--shadow-floating)' }}>
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #E2E0DA' }}>
               <h2 className="font-jakarta font-bold text-navy text-lg">Editar — {current.ref}</h2>
               <button onClick={() => setEditing(false)} style={{ color: '#6B7280' }}><X size={18} /></button>
@@ -763,111 +537,6 @@ function SectionPropDetail({ prop, onBack, notify }: {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  )
-}
-
-// ── SECTION: Visitas ──────────────────────────────────────────────────────────
-function SectionVisitas({ notify }: { notify: (m: string, ok?: boolean) => void }) {
-  const [visitas, setVisitas] = useState<Visita[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!supabaseReady) { setLoading(false); return }
-    supabase.from('visitas').select('*').order('fecha', { ascending: true }).order('hora', { ascending: true })
-      .then(({ data, error }) => {
-        setLoading(false)
-        if (error) { notify(error.message, false); return }
-        setVisitas((data ?? []) as Visita[])
-      })
-  }, [])
-
-  const changeEstado = async (id: number, estado: Visita['estado']) => {
-    await supabase.from('visitas').update({ estado }).eq('id', id)
-    setVisitas(vs => vs.map(v => v.id === id ? { ...v, estado } : v))
-  }
-
-  // Group visitas by date for calendar view
-  const today     = new Date().toISOString().split('T')[0]
-  const upcoming  = visitas.filter(v => v.fecha >= today && v.estado !== 'cancelada')
-  const past      = visitas.filter(v => v.fecha < today || v.estado === 'cancelada')
-
-  const VisitaRow = ({ v }: { v: Visita }) => {
-    const col = ESTADO_COLOR[v.estado] ?? ESTADO_COLOR.pendiente
-    return (
-      <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-4" style={{ border: '1px solid #E2E0DA' }}>
-        {/* Date badge */}
-        <div className="w-12 text-center shrink-0">
-          <p className="font-jakarta font-black text-navy text-lg leading-none">{new Date(v.fecha + 'T00:00').getDate()}</p>
-          <p className="font-inter text-[10px] uppercase tracking-wide" style={{ color: '#9CA3AF' }}>
-            {new Date(v.fecha + 'T00:00').toLocaleDateString('es-ES', { month: 'short' })}
-          </p>
-        </div>
-        {/* Divider */}
-        <div className="w-px h-10 shrink-0" style={{ background: '#E2E0DA' }} />
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <p className="font-jakarta font-bold text-navy text-sm">{v.nombre}</p>
-          <p className="font-inter text-xs truncate" style={{ color: '#9CA3AF' }}>
-            <span style={{ color: '#C49A3C' }}>{v.propiedad_ref}</span>
-            {v.propiedad_titulo && ` · ${v.propiedad_titulo}`}
-          </p>
-        </div>
-        {/* Time */}
-        <div className="flex items-center gap-1 font-inter text-sm font-semibold shrink-0" style={{ color: '#0D1F3C' }}>
-          <Clock size={13} style={{ color: '#9CA3AF' }} />
-          {v.hora.slice(0, 5)}
-        </div>
-        {/* Contact */}
-        <div className="hidden md:flex gap-2 shrink-0">
-          {v.telefono && <a href={`tel:${v.telefono}`} className="p-1.5 rounded-lg" style={{ color: '#6B7280' }}><Phone size={14} /></a>}
-          {v.email    && <a href={`mailto:${v.email}`} className="p-1.5 rounded-lg" style={{ color: '#6B7280' }}><Mail size={14} /></a>}
-        </div>
-        {/* Estado */}
-        <select value={v.estado}
-          onChange={e => changeEstado(v.id, e.target.value as Visita['estado'])}
-          className="font-inter text-xs font-semibold px-2 py-1 rounded-full border-0 outline-none cursor-pointer"
-          style={{ background: col.bg, color: col.text }}
-          onClick={e => e.stopPropagation()}>
-          {VISITA_ESTADOS.map(e => <option key={e} value={e}>{ESTADO_LABEL[e]}</option>)}
-        </select>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-jakarta font-bold text-navy text-2xl">Visitas</h1>
-        <p className="font-inter text-sm mt-1" style={{ color: '#9CA3AF' }}>
-          {upcoming.length} próximas · {past.length} pasadas/canceladas
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin" style={{ color: '#C49A3C' }} /></div>
-      ) : visitas.length === 0 ? (
-        <div className="text-center py-20">
-          <Calendar size={40} className="mx-auto mb-3" style={{ color: '#E2E0DA' }} />
-          <p className="font-jakarta font-bold text-navy mb-2">Sin visitas registradas</p>
-          <p className="font-inter text-sm" style={{ color: '#9CA3AF' }}>Las visitas agendadas desde la web aparecerán aquí</p>
-        </div>
-      ) : (
-        <>
-          {upcoming.length > 0 && (
-            <div className="mb-8">
-              <p className="font-inter text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#9CA3AF' }}>Próximas visitas</p>
-              <div className="space-y-2">{upcoming.map(v => <VisitaRow key={v.id} v={v} />)}</div>
-            </div>
-          )}
-          {past.length > 0 && (
-            <div>
-              <p className="font-inter text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#9CA3AF' }}>Pasadas / canceladas</p>
-              <div className="space-y-2 opacity-60">{past.map(v => <VisitaRow key={v.id} v={v} />)}</div>
-            </div>
-          )}
-        </>
       )}
     </div>
   )

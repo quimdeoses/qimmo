@@ -156,3 +156,46 @@ function PaletteBody({ onClose, items, loading }: { onClose: () => void; items: 
         </motion.div>
   )
 }
+
+// ── Sheet: hoja inferior en móvil, panel centrado en escritorio ──────────────
+export function Sheet({ open, onClose, title, children, footer, wide = false }: {
+  open: boolean; onClose: () => void; title: React.ReactNode
+  children: React.ReactNode; footer?: React.ReactNode; wide?: boolean
+}) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center sm:p-4"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          style={{ background: 'color-mix(in oklch, #0D1F3C 30%, transparent)' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+          <motion.div className={`w-full ${wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'} max-h-[92dvh] flex flex-col rounded-t-[1.75rem] sm:rounded-[var(--radius-surface)]`}
+            initial={{ y: 48, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }} transition={spring.gentle}
+            drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
+            onDragEnd={(_, i) => { if (i.offset.y > 120 || i.velocity.y > 600) onClose() }}
+            style={{ background: 'var(--surface)', boxShadow: 'var(--shadow-floating)' }}>
+            <div className="sm:hidden flex justify-center pt-2.5 cursor-grab"><span className="w-10 h-1 rounded-full" style={{ background: 'var(--border-strong)' }} /></div>
+            <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
+              <div className="min-w-0 flex-1">{title}</div>
+              <button onClick={onClose} className="p-1.5 -mr-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 pb-4" onPointerDownCapture={e => e.stopPropagation()}>{children}</div>
+            {footer && (
+              <div className="flex items-center gap-3 px-5 py-4"
+                style={{ borderTop: '1px solid var(--border)', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+                {footer}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
