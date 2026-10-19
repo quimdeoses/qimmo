@@ -352,7 +352,7 @@ function InvoiceForm({ initial, suggestedNumber, onClose, onSaved, notify }: {
 }
 
 // ── Sección ───────────────────────────────────────────────────────────────────
-export default function SectionFacturas({ notify }: { notify: (m: string, ok?: boolean) => void }) {
+export default function SectionFacturas({ notify, tabs }: { notify: (m: string, ok?: boolean) => void; tabs?: React.ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState<Invoice | 'new' | null>(null)
@@ -394,9 +394,9 @@ export default function SectionFacturas({ notify }: { notify: (m: string, ok?: b
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 gap-4">
-        <h1 className="font-jakarta font-bold text-2xl">Facturas</h1>
-        <button onClick={() => setModal('new')} className="btn-primary"><Plus size={16} /> Nueva factura</button>
+      <div className="flex items-center justify-between mb-5 gap-3">
+        {tabs}
+        <button onClick={() => setModal('new')} className="btn-primary shrink-0"><Plus size={16} /><span className="hidden sm:inline">Nueva factura</span></button>
       </div>
 
       {!loading && (

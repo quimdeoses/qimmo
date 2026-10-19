@@ -48,8 +48,9 @@ const monthName = (k: string, short = false) => {
 const pnlBase = (g: Gasto) => (g.consolidado ? Number(g.base ?? 0) : 0)
 
 // ── Sección ───────────────────────────────────────────────────────────────────
-export default function SectionFinanzas({ notify }: { notify: Notify }) {
-  const [tab, setTab]           = useState<'resultado' | 'gastos'>('resultado')
+export default function SectionFinanzas({ notify, tab, tabs }: {
+  notify: Notify; tab: 'resultado' | 'gastos'; tabs?: React.ReactNode
+}) {
   const [gastos, setGastos]     = useState<Gasto[]>([])
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [loading, setLoading]   = useState(true)
@@ -81,12 +82,10 @@ export default function SectionFinanzas({ notify }: { notify: Notify }) {
   return (
     <div className="max-w-6xl">
       <div className="flex items-center justify-between gap-3 mb-5">
-        <h1 className="font-jakarta font-bold text-2xl">Finanzas</h1>
-        <button onClick={() => setModal('new')} className="btn-primary"><Plus size={16} /> <span className="hidden sm:inline">Nuevo gasto</span></button>
-      </div>
-      <div className="mb-5">
-        <SegmentedControl id="fin-tab" value={tab} onChange={setTab}
-          options={[{ value: 'resultado', label: 'Resultado' }, { value: 'gastos', label: `Gastos · ${gastos.length}` }]} />
+        {tabs}
+        {tab === 'gastos' && (
+          <button onClick={() => setModal('new')} className="btn-primary shrink-0"><Plus size={16} /><span className="hidden sm:inline">Nuevo gasto</span></button>
+        )}
       </div>
 
       {loading ? (

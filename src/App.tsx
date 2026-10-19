@@ -66,7 +66,7 @@ export default function App() {
         <Route path="/politica-cookies"     element={<PoliticaCookies />} />
         <Route path="/blog"                  element={<Blog />} />
         <Route path="/blog/:slug"            element={<BlogPost />} />
-        <Route path="/admin"               element={<Suspense fallback={null}><Admin /></Suspense>} />
+        <Route path="/admin/*"             element={<Suspense fallback={null}><Admin /></Suspense>} />
       </Routes>
     </BrowserRouter>
   )

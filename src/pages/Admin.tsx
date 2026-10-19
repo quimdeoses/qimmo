@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   supabase, supabaseReady, type Propiedad, type TipoProp, type ZonaProp,
@@ -21,7 +22,29 @@ import { spring, sectionEnter } from './admin/arc/motion'
 import { Logo, SegmentedControl } from './admin/arc/components'
 import './admin/arc/arc.css'
 
-type Section = 'inicio' | 'finanzas' | 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas' | 'mandato' | 'blog' | 'facturas'
+type Section = 'inicio' | 'pipeline' | 'propiedades' | 'prop_detail' | 'visitas'
+  | 'facturas' | 'gastos' | 'resultado' | 'mandato' | 'blog'
+
+// Cada sección tiene su URL bajo /admin (enlaces directos y botón «atrás»)
+const PATHS: Record<Exclude<Section, 'prop_detail'>, string> = {
+  inicio: '', pipeline: 'leads', propiedades: 'properties', visitas: 'visits',
+  facturas: 'billing/invoices', gastos: 'billing/expenses', resultado: 'billing/pnl',
+  mandato: 'mandate', blog: 'blog',
+}
+const BILLING: Section[] = ['facturas', 'gastos', 'resultado']
+
+function parsePath(pathname: string): { section: Section; propRef: string } {
+  const [first = '', second = ''] = pathname.replace(/^\/admin\/?/, '').split('/')
+  switch (first) {
+    case 'leads':      return { section: 'pipeline', propRef: '' }
+    case 'visits':     return { section: 'visitas', propRef: '' }
+    case 'mandate':    return { section: 'mandato', propRef: '' }
+    case 'blog':       return { section: 'blog', propRef: '' }
+    case 'billing':    return { section: second === 'expenses' ? 'gastos' : second === 'pnl' ? 'resultado' : 'facturas', propRef: '' }
+    case 'properties': return second ? { section: 'prop_detail', propRef: decodeURIComponent(second) } : { section: 'propiedades', propRef: '' }
+    default:           return { section: 'inicio', propRef: '' }
+  }
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const TIPOS:    TipoProp[]    = ['Piso', 'Àtic', 'Duplex', 'Casa', 'Local', 'Oficina', 'Nave']
@@ -808,7 +831,9 @@ function SearchButton({ compact = false, onClick }: { compact?: boolean; onClick
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const [authed, setAuthed]       = useState<boolean | null>(null)
-  const [section, setSection]     = useState<Section>('inicio')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { section, propRef } = parsePath(location.pathname)
   const [selectedProp, setSelectedProp] = useState<Propiedad | null>(null)
   const [toasts, setToasts]       = useState<ToastItem[]>([])
   const [newLeadsCount, setNewLeadsCount] = useState(0)
@@ -833,6 +858,13 @@ export default function Admin() {
     supabase.from('leads').select('id', { count: 'exact' }).eq('estado', 'nuevo')
       .then(({ count }) => setNewLeadsCount(count ?? 0))
   }, [authed])
+
+  // Enlace directo a una ficha: cargamos la propiedad por su referencia
+  useEffect(() => {
+    if (!authed || section !== 'prop_detail' || selectedProp?.ref === propRef) return
+    supabase.from('propiedades').select('*').eq('ref', propRef).maybeSingle()
+      .then(({ data }) => setSelectedProp((data as Propiedad | null) ?? null))
+  }, [authed, section, propRef, selectedProp?.ref])
 
   // PWA: «Añadir a pantalla de inicio» abre el CRM como app
   useEffect(() => {
@@ -882,14 +914,13 @@ export default function Admin() {
   const logout = () => { supabase.auth.signOut() }
 
   const goTo = (s: Section) => {
-    setSection(s)
-    if (s !== 'prop_detail') setSelectedProp(null)
+    if (s !== 'prop_detail') navigate(PATHS[s] ? `/admin/${PATHS[s]}` : '/admin')
     setMobileMenuOpen(false)
   }
 
   const handleSelectProp = (p: Propiedad) => {
     setSelectedProp(p)
-    setSection('prop_detail')
+    navigate(`/admin/properties/${encodeURIComponent(p.ref)}`)
   }
 
   const NAV = [
@@ -897,8 +928,7 @@ export default function Admin() {
     { id: 'pipeline'    as Section, icon: Users,    label: 'Pipeline',     badge: newLeadsCount },
     { id: 'propiedades' as Section, icon: Home,     label: 'Propiedades',  badge: undefined },
     { id: 'visitas'     as Section, icon: Calendar, label: 'Visitas',      badge: undefined },
-    { id: 'facturas'    as Section, icon: Receipt,  label: 'Facturas',     badge: undefined },
-    { id: 'finanzas'    as Section, icon: Wallet,   label: 'Finanzas',     badge: undefined },
+    { id: 'facturas'    as Section, icon: Receipt,  label: 'Facturación',  badge: undefined },
     { id: 'mandato'     as Section, icon: FileText, label: 'Mandato',      badge: undefined },
     { id: 'blog'        as Section, icon: BookOpen, label: 'Blog',         badge: undefined },
   ]
@@ -908,6 +938,8 @@ export default function Admin() {
 
   const commands: CommandItem[] = [
     ...NAV.map(n => ({ id: `nav-${n.id}`, group: 'Ir a', label: n.label, icon: <n.icon size={15} />, run: () => goTo(n.id) })),
+    { id: 'nav-gastos', group: 'Ir a', label: 'Gastos', hint: 'Facturación', icon: <Wallet size={15} />, run: () => goTo('gastos') },
+    { id: 'nav-resultado', group: 'Ir a', label: 'Resultado (P&L)', hint: 'Facturación', icon: <Wallet size={15} />, run: () => goTo('resultado') },
     { id: 'act-web', group: 'Acciones', label: 'Ver la web pública', icon: <MapPin size={15} />, run: () => window.open('/', '_blank') },
     { id: 'act-logout', group: 'Acciones', label: 'Cerrar sesión', icon: <LogOut size={15} />, run: logout },
     ...(cmdData?.leads ?? []).map(l => ({
@@ -925,7 +957,14 @@ export default function Admin() {
     })),
   ]
 
-  const activeSection = section === 'prop_detail' ? 'propiedades' : section
+  const activeSection = section === 'prop_detail' ? 'propiedades' : BILLING.includes(section) ? 'facturas' : section
+  const billingTabs = (
+    <SegmentedControl id="billing-tab" value={section} onChange={goTo} options={[
+      { value: 'facturas' as Section, label: 'Facturas' },
+      { value: 'gastos' as Section, label: 'Gastos' },
+      { value: 'resultado' as Section, label: 'Resultado' },
+    ]} />
+  )
 
   return (
     <div className="arc min-h-screen flex">
@@ -1030,7 +1069,7 @@ export default function Admin() {
       {/* ── MAIN CONTENT ── */}
       <main className="flex-1 min-w-0 md:!pt-0 md:!pb-0"
         style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}>
-        <motion.div key={section} {...sectionEnter} className="px-4 sm:px-5 lg:px-8 py-6 md:py-8">
+        <motion.div key={BILLING.includes(section) ? 'billing' : section} {...sectionEnter} className="px-4 sm:px-5 lg:px-8 py-6 md:py-8">
           {section === 'inicio' && <SectionInicio go={goTo} />}
           {section === 'pipeline' && <SectionPipeline notify={notify} />}
           {section === 'propiedades' && <SectionPropiedades notify={notify} onSelectProp={handleSelectProp} />}
@@ -1044,8 +1083,14 @@ export default function Admin() {
             </div>
           )}
           {section === 'blog' && <SectionBlog notify={notify} />}
-          {section === 'facturas' && <SectionFacturas notify={notify} />}
-          {section === 'finanzas' && <SectionFinanzas notify={notify} />}
+          {BILLING.includes(section) && (
+            <div className="max-w-6xl">
+              <h1 className="font-jakarta font-bold text-2xl mb-4">Facturación</h1>
+              {section === 'facturas'
+                ? <SectionFacturas notify={notify} tabs={billingTabs} />
+                : <SectionFinanzas key={section} notify={notify} tab={section === 'gastos' ? 'gastos' : 'resultado'} tabs={billingTabs} />}
+            </div>
+          )}
         </motion.div>
       </main>
     </div>
